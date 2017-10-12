@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/EMI_Projekt.iml" filepath="$PROJECT_DIR$/EMI_Projekt.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pocketsphinx/pocketsphinx.iml" filepath="$PROJECT_DIR$/pocketsphinx/pocketsphinx.iml" />
     </modules>
   </component>
 </project>
