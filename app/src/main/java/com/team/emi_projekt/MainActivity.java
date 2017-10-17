@@ -24,6 +24,8 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.HashMap;
+
 import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
@@ -48,10 +50,17 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     private SpeechRecognizer recognizer;
 
+    private HashMap<String, Integer> captions;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        /* Set answers for each sentence */
+        captions = new HashMap<String, Integer>();
+        captions.put(KWS_SEARCH, R.string.kws_caption);
+        captions.put(DIGITS_SEARCH, R.string.digits_caption);
 
         setContentView(R.layout.activity_main);
 
@@ -147,15 +156,14 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     private void switchSearch(String searchName) {
         recognizer.stop();
 
-        // If we are not spotting, start listening with timeout (10000 ms or 10 seconds).
+        /* If we are not spotting, start listening with timeout (10000 ms or 10 seconds). */
         if (searchName.equals(KWS_SEARCH))
             recognizer.startListening(searchName);
         else
             recognizer.startListening(searchName, 10000);
 
-        /* TODO: captions must be HashMap keyphrase-answer for: String caption = getResources().getString(captions.get(searchName));
-        ((TextView) findViewById(R.id.caption_text)).setText(caption); */
-        String caption = "I recognized " + searchName;
+        /* Set answer phrase */
+        String caption = getResources().getString(captions.get(searchName));
         ((TextView) findViewById(R.id.caption_text)).setText(caption);
     }
 
@@ -168,7 +176,6 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
                 .setDictionary(new File(assetsDir, "cmudict-en-us.dict"))
                 /* To disable logging of raw audio comment out this call (takes a lot of space on the device) */
                 .setRawLogDir(assetsDir)
-
                 .getRecognizer();
         recognizer.addListener(this);
 
