@@ -40,10 +40,13 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     private static final String KWS_SEARCH = "wakeup";
 
     /* Keyword to activate listener */
-    private static final String KEYPHRASE = "sally";
+    private static final String KEYPHRASE = "einkaufsliste";
 
-    /* Usage example (set the word) */
-    private static final String DIGITS_SEARCH = "digits";
+    /* Words */
+    private static final String MENU_SEARCH = "menü";
+    private static final String NEW_CARD_SEARCH = "neue karte";
+    private static final String NEW_LIST_SEARCH = "neue liste";
+    private static final String ACTUAL_LIST_SEARCH = "aktuelle liste";
 
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
@@ -60,7 +63,10 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         /* Set answers for each sentence */
         captions = new HashMap<String, Integer>();
         captions.put(KWS_SEARCH, R.string.kws_caption);
-        captions.put(DIGITS_SEARCH, R.string.digits_caption);
+        captions.put(MENU_SEARCH, R.string.menu_caption);
+        captions.put(NEW_CARD_SEARCH, R.string.new_card_caption);
+        captions.put(NEW_LIST_SEARCH, R.string.new_list_caption);
+        captions.put(ACTUAL_LIST_SEARCH, R.string.actual_list_caption);
 
         setContentView(R.layout.activity_main);
 
@@ -71,8 +77,9 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                recognizer.startListening(KWS_SEARCH);
+                /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();*/
             }
         });
 
@@ -104,11 +111,8 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         int id = item.getItemId();
 
         /* noinspection SimplifiableIfStatement */
-        if (id == R.id.action_settings) {
-            return true;
-        }
+        return id == R.id.action_settings || super.onOptionsItemSelected(item);
 
-        return super.onOptionsItemSelected(item);
     }
 
     /* Check permissions */
@@ -172,10 +176,10 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
             of different kind and switch between them */
 
         recognizer = SpeechRecognizerSetup.defaultSetup()
-                .setAcousticModel(new File(assetsDir, "en-us-ptm"))
-                .setDictionary(new File(assetsDir, "cmudict-en-us.dict"))
+                .setAcousticModel(new File(assetsDir, "german"))
+                .setDictionary(new File(assetsDir, "german.dic"))
                 /* To disable logging of raw audio comment out this call (takes a lot of space on the device) */
-                .setRawLogDir(assetsDir)
+                //.setRawLogDir(assetsDir)
                 .getRecognizer();
         recognizer.addListener(this);
 
@@ -183,8 +187,8 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
 
         /* Usage example (set the instruction file) */
-        File digitsGrammar = new File(assetsDir, "digits.gram");
-        recognizer.addGrammarSearch(DIGITS_SEARCH, digitsGrammar);
+        File menuGrammar = new File(assetsDir, "menu.gram");
+        recognizer.addGrammarSearch(MENU_SEARCH, menuGrammar);
     }
 
     @Override
@@ -208,9 +212,21 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
         /* Wait for the command after hearing the keyword */
         if (text.equals(KEYPHRASE))
-            switchSearch(DIGITS_SEARCH);
+            switchSearch(MENU_SEARCH);
+        else if (text.equals(NEW_CARD_SEARCH)) {
+            recognizer.stop();
+            makeText(getApplicationContext(), NEW_CARD_SEARCH, Toast.LENGTH_SHORT).show();
+        }
+        else if (text.equals(NEW_LIST_SEARCH)) {
+            recognizer.stop();
+            makeText(getApplicationContext(), NEW_LIST_SEARCH, Toast.LENGTH_SHORT).show();
+        }
+        else if (text.equals(ACTUAL_LIST_SEARCH)) {
+            recognizer.stop();
+            makeText(getApplicationContext(), ACTUAL_LIST_SEARCH, Toast.LENGTH_SHORT).show();
+        }
         else
-            ((TextView) findViewById(R.id.caption_text)).setText(text);
+            makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
     }
 
     @Override
