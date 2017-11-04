@@ -2,6 +2,9 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
+    configurations.all {
+        resolutionStrategy.force 'com.google.code.findbugs:jsr305:1.3.9'
+    }
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "com.team.emi_projekt"
@@ -29,6 +32,15 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:25.3.1'
     testCompile 'junit:junit:4.12'
+
+    compile 'com.google.android.gms:play-services-auth:+'
+    compile 'pub.devrel:easypermissions:0.3.0'
+    compile('com.google.api-client:google-api-client-android:1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+    compile('com.google.apis:google-api-services-sheets:v4-rev488-1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
 }
 
 ant.importBuild 'assets.xml'
