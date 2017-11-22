@@ -8,18 +8,13 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+
 import android.os.AsyncTask;
 import android.os.Bundle;
 
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -30,7 +25,6 @@ import android.view.MenuItem;
 
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -46,42 +40,16 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
-
-import edu.cmu.pocketsphinx.Assets;
-import edu.cmu.pocketsphinx.Hypothesis;
-import edu.cmu.pocketsphinx.RecognitionListener;
-import edu.cmu.pocketsphinx.SpeechRecognizer;
-import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-import static android.widget.Toast.makeText;
-
-public class MainActivity extends AppCompatActivity implements RecognitionListener, EasyPermissions.PermissionCallbacks {
-
-    /* Named searches allow to quickly reconfigure the decoder */
-    private static final String KWS_SEARCH = "wakeup";
-    /* Keyword to activate listener */
-    private static final String KEYPHRASE = String.valueOf(R.string.keyphrase);
-    /* Words */
-    private static final String MENU_SEARCH = String.valueOf(R.string.menu_search);
-    private static final String NEW_CARD_SEARCH = String.valueOf(R.string.new_card_search);
-    private static final String NEW_LIST_SEARCH = String.valueOf(R.string.new_list_search);
-    private static final String ACTUAL_LIST_SEARCH = String.valueOf(R.string.actual_list_search);
-    /* Used to handle permission request */
-    private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
-
-    private SpeechRecognizer recognizer;
-    private HashMap<String, Integer> captions;
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
     GoogleAccountCredential mCredential;
     ProgressDialog mProgress;
@@ -97,12 +65,9 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY};
 
-    int rand;
-    Random randomize;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -127,41 +92,17 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-        randomize = new Random();
-        rand = randomize.nextInt(11);
-
-        /* Set answers for each sentence */
-        captions = new HashMap<>();
-        captions.put(KWS_SEARCH, R.string.kws_caption);
-        captions.put(MENU_SEARCH, R.string.menu_caption);
-        captions.put(NEW_CARD_SEARCH, R.string.new_card_caption);
-        captions.put(NEW_LIST_SEARCH, R.string.new_list_caption);
-        captions.put(ACTUAL_LIST_SEARCH, R.string.actual_list_caption);
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                recognizer.startListening(KWS_SEARCH);
-                /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();*/
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
             }
-        });
-
-        ((TextView) findViewById(R.id.caption_text)).setText("Preparing the recognizer");
-
-        /* Check if user has given permission to record audio */
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-            return;
-        }
-
-        /* Setup voice recognition */
-        runRecognizerSetup();
+        });*/
     }
 
     private void getResultsFromApi() {
@@ -171,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
             chooseAccount();
         } else if (!isDeviceOnline()) {
             //TODO: change to the dialog window, where u must to turn on the internet or close the app
-            mOutputText.setText("No network connection available.");
+            mOutputText.setText("No network connection available. Please get an internet connection");
         } else {
             new MakeRequestTask(mCredential).execute();
         }
@@ -235,15 +176,6 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         }
     }
 
-    @Override
-    public void onPermissionsGranted(int requestCode, List<String> list) {
-        // Do nothing. :) mb change here something?
-    }
-
-    @Override
-    public void onPermissionsDenied(int requestCode, List<String> list) {
-        // Do nothing. Same thing :/
-    }
 
     /* TODO: add here a switch for offline mode */
     private boolean isDeviceOnline() {
@@ -272,10 +204,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     void showGooglePlayServicesAvailabilityErrorDialog(final int connectionStatusCode) {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        Dialog dialog = apiAvailability.getErrorDialog(
-                MainActivity.this,
-                connectionStatusCode,
-                REQUEST_GOOGLE_PLAY_SERVICES);
+        Dialog dialog = apiAvailability.getErrorDialog(MainActivity.this, connectionStatusCode, REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
 
@@ -321,8 +250,9 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
          * @throws IOException
          */
         private List<String> getDataFromApi() throws IOException {
+            //TODO: Store this data in the list/vector of Sheets objects
             String spreadsheetId = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
-            /* range is A1 notation {%SheetName(in the bottom of the spreadsheet)(first visible if nothing wrote)% ! %from% : %until%} */
+            /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
             String range = "A1:B2";
             List<String> results = new ArrayList<>();
             ValueRange response = this.mService.spreadsheets().values()
@@ -396,148 +326,18 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     }
 
-    /* Check permissions */
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        EasyPermissions.onRequestPermissionsResult(
-                requestCode, permissions, grantResults, this);
-
-        if (requestCode == PERMISSIONS_REQUEST_RECORD_AUDIO) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                runRecognizerSetup();
-            } else {
-                finish();
-            }
-        }
-    }
-
-    private void runRecognizerSetup() {
-        /* Recognizer initialization is a time-consuming and it involves IO,
-         so we execute it in async task */
-        new AsyncTask<Void, Void, Exception>() {
-            @Override
-            protected Exception doInBackground(Void... params) {
-                try {
-                    Assets assets = new Assets(MainActivity.this);
-                    File assetDir = assets.syncAssets();
-                    setupRecognizer(assetDir);
-                } catch (IOException e) {
-                    return e;
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Exception result) {
-                if (result != null) {
-                    ((TextView) findViewById(R.id.caption_text)).setText("Failed to init recognizer " + result);
-                } else {
-                    switchSearch(KWS_SEARCH);
-                }
-            }
-        }.execute();
-    }
-
-    /* To change searching string */
-    private void switchSearch(String searchName) {
-        recognizer.stop();
-
-        /* If we are not spotting, start listening with timeout (10000 ms or 10 seconds). */
-        if (searchName.equals(KWS_SEARCH))
-            recognizer.startListening(searchName);
-        else
-            recognizer.startListening(searchName, 10000);
-
-        /* Set answer phrase */
-        String caption = getResources().getString(captions.get(searchName));
-        ((TextView) findViewById(R.id.caption_text)).setText(caption);
-    }
-
-    private void setupRecognizer(File assetsDir) throws IOException {
-        /* The recognizer can be configured to perform multiple searches
-            of different kind and switch between them */
-
-        recognizer = SpeechRecognizerSetup.defaultSetup()
-                .setAcousticModel(new File(assetsDir, "german"))
-                .setDictionary(new File(assetsDir, "german.dic"))
-                /* To disable logging of raw audio comment out this call (takes a lot of space on the device) */
-                //.setRawLogDir(assetsDir)
-                .getRecognizer();
-        recognizer.addListener(this);
-
-        /* Create keyword-activation search. */
-        recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
-
-        /* Usage example (set the instruction file) */
-        File menuGrammar = new File(assetsDir, "menu.gram");
-        recognizer.addGrammarSearch(MENU_SEARCH, menuGrammar);
-
-        File languageModel = new File(assetsDir, "cmusphinx-voxforge-de.lm.bin");
-        recognizer.addNgramSearch(NEW_CARD_SEARCH, languageModel);
+    public void onPermissionsGranted(int requestCode, List<String> list) {
+        // Do nothing. :) mb change here something?
     }
 
     @Override
-    public void onBeginningOfSpeech() {
-
-    }
-
-    @Override
-    public void onEndOfSpeech() {
-        if (!recognizer.getSearchName().equals(KWS_SEARCH))
-            switchSearch(KWS_SEARCH);
-    }
-
-    @Override
-    public void onPartialResult(Hypothesis hypothesis) {
-    /* If hear some words */
-        if (hypothesis == null)
-            return;
-
-        String text = hypothesis.getHypstr();
-
-        /* Wait for the command after hearing the keyword */
-        if (text.equals(KEYPHRASE))
-            switchSearch(MENU_SEARCH);
-        else if (text.equals(NEW_CARD_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), NEW_CARD_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else if (text.equals(NEW_LIST_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), NEW_LIST_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else if (text.equals(ACTUAL_LIST_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), ACTUAL_LIST_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else
-            makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onResult(Hypothesis hypothesis) {
-        ((TextView) findViewById(R.id.caption_text)).setText("");
-        if (hypothesis != null) {
-            String text = hypothesis.getHypstr();
-            makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onError(Exception e) {
-        ((TextView) findViewById(R.id.caption_text)).setText(e.getMessage());
-    }
-
-    @Override
-    public void onTimeout() {
-        switchSearch(KWS_SEARCH);
+    public void onPermissionsDenied(int requestCode, List<String> list) {
+        // Do nothing. Same thing :/
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        recognizer.cancel();
-        recognizer.shutdown();
     }
 }
