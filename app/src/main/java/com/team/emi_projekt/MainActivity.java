@@ -56,6 +56,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private TextView mOutputText;
     private Button mCallApiButton;
+    //TODO: change this object call/looks like crap now
+    private Sheets sheets;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -64,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY};
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -250,20 +251,19 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @throws IOException
          */
         private List<String> getDataFromApi() throws IOException {
-            //TODO: Store this data in the list/vector of Sheets objects
-            String spreadsheetId = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
-            /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
-            String range = "A1:B2";
+            sheets.setId("1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug");
+            sheets.setRange("A1:B2");
             List<String> results = new ArrayList<>();
+            //TODO: call this inside of Sheets class
             ValueRange response = this.mService.spreadsheets().values()
-                    .get(spreadsheetId, range)
+                    .get(sheets.getId(), sheets.getRange())
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
-                results.add("First, Second");
-                for (List row : values) {
-                    results.add(row.get(0) + ", " + row.get(1));
-                }
+                     //TODO: Probably move this method to the Sheets
+//           for (List row : values) {
+//                    //results.add(row.get(0) + ", " + row.get(1));
+//                }
             }
             return results;
         }
