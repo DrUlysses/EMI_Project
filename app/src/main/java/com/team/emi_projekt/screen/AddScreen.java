@@ -1,4 +1,4 @@
-package com.team.emi_projekt;
+package com.team.emi_projekt.screen;
 
 public class AddScreen {
 //    SpeechRecognizer recognizer;

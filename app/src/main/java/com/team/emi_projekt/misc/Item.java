@@ -1,8 +1,9 @@
-package com.team.emi_projekt;
+package com.team.emi_projekt.misc;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Item {
+public class Item implements Serializable {
     //Can be moved to the constructor
     private String
         label = "",
@@ -16,6 +17,11 @@ public class Item {
         lastAdded = new Date(),
         lastAddedOnline = new Date(),
         lastBuyed = new Date();
+
+    public Item(String label, String comment) {
+        this.label = label;
+        this.comment = comment;
+    }
 
     public void merge(Item item) {
 

@@ -1,9 +1,12 @@
-package com.team.emi_projekt;
+package com.team.emi_projekt.misc;
 
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.team.emi_projekt.MainActivity;
+import com.team.emi_projekt.R;
 
 import java.io.File;
 import java.io.IOException;

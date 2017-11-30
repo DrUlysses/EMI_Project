@@ -39,6 +39,9 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.team.emi_projekt.misc.Item;
+import com.team.emi_projekt.misc.Sheets;
+import com.team.emi_projekt.screen.MainScreen;
 
 import java.io.IOException;
 
@@ -57,7 +60,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private TextView mOutputText;
     private Button mCallApiButton;
     //TODO: change this object call/looks like crap now
-    private Sheets sheets;
+    Sheets sheets;
+
+    private Button nextScreen;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -66,11 +71,26 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY};
-
+    //TODO: overwrite onResult
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        sheets = new Sheets();
+        sheets.addSheet("test");
+        sheets.addItem("test", new Item("Label", "Comment"));
+        nextScreen = (Button) findViewById(R.id.goToMain);
+        nextScreen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, MainScreen.class);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("Sheets", sheets);
+                intent.putExtras(bundle);
+                startActivityForResult(intent, 1);
+            }
+        });
 
         mOutputText = (TextView) findViewById(R.id.loginText);
         mCallApiButton = (Button) findViewById(R.id.login);

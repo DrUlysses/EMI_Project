@@ -11,4 +11,5 @@
     <string name="new_card_search">neue karte</string>
     <string name="actual_list_caption">Aktuelle Liste</string>
     <string name="actual_list_search">aktuelle liste</string>
+    <string name="title_activity_main_screen">MainScreen</string>
 </resources>
