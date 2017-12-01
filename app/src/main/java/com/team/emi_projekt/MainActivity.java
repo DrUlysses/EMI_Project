@@ -60,9 +60,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private TextView mOutputText;
     private Button mCallApiButton;
     //TODO: change this object call/looks like crap now
-    Sheets sheets;
-
-    private Button nextScreen;
+    private Sheets sheets;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -78,19 +76,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         setContentView(R.layout.activity_main);
 
         sheets = new Sheets();
-        sheets.addSheet("test");
-        sheets.addItem("test", new Item("Label", "Comment"));
-        nextScreen = (Button) findViewById(R.id.goToMain);
-        nextScreen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, MainScreen.class);
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("Sheets", sheets);
-                intent.putExtras(bundle);
-                startActivityForResult(intent, 1);
-            }
-        });
 
         mOutputText = (TextView) findViewById(R.id.loginText);
         mCallApiButton = (Button) findViewById(R.id.login);
@@ -115,15 +100,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
     }
 
     private void getResultsFromApi() {
@@ -233,7 +209,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
      * An asynchronous task that handles the Google Sheets API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+    private class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
 
@@ -252,13 +228,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @param params no parameters needed for this task.
          */
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params) {
             try {
                 return getDataFromApi();
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
-                return null;
+                return false;
             }
         }
 
@@ -270,22 +246,25 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @return List of names and majors
          * @throws IOException
          */
-        private List<String> getDataFromApi() throws IOException {
-            sheets.setId("1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug");
-            sheets.setRange("A1:B2");
-            List<String> results = new ArrayList<>();
-            //TODO: call this inside of Sheets class
+        private Boolean getDataFromApi() throws IOException {
+
+            String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
+            String sheet = "MyList";
+            sheets.addSheet(sheet);
+            String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
+            //TODO: call this inside of other class
             ValueRange response = this.mService.spreadsheets().values()
-                    .get(sheets.getId(), sheets.getRange())
+                    .get(id, sheet + "!" + range)
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
                      //TODO: Probably move this method to the Sheets
-//           for (List row : values) {
-//                    //results.add(row.get(0) + ", " + row.get(1));
-//                }
+               for (List row : values) {
+                   Item tempItem = new Item(row);
+                   sheets.addItem(sheet, tempItem);
+               }
             }
-            return results;
+            return true;
         }
 
         @Override
@@ -295,13 +274,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
+        protected void onPostExecute(Boolean output) {
             mProgress.hide();
-            if (output == null || output.size() == 0) {
+            if (!output) {
                 mOutputText.setText("No results returned.");
             } else {
-                output.add(0, "Data retrieved using the Google Sheets API:");
-                mOutputText.setText(TextUtils.join("\n", output));
+                Intent intent = new Intent(MainActivity.this, MainScreen.class);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("Sheets", sheets);
+                intent.putExtras(bundle);
+                startActivityForResult(intent, 1);
             }
         }
 
@@ -354,10 +336,5 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onPermissionsDenied(int requestCode, List<String> list) {
         // Do nothing. Same thing :/
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
     }
 }

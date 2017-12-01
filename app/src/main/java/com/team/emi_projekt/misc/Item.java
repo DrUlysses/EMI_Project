@@ -1,7 +1,13 @@
 package com.team.emi_projekt.misc;
 
+
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class Item implements Serializable {
     //Can be moved to the constructor
@@ -21,6 +27,37 @@ public class Item implements Serializable {
     public Item(String label, String comment) {
         this.label = label;
         this.comment = comment;
+    }
+
+    public Item(List<String> list) {
+
+        DateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+
+        this.label = list.get(0);
+        this.comment = list.get(1);
+
+        this.amount = Double.parseDouble(list.get(2));
+        this.amountMonth = Double.parseDouble(list.get(3));
+        this.amountYear = Double.parseDouble(list.get(4));
+        this.amountTotal = Double.parseDouble(list.get(5));
+
+        try {
+            this.lastAdded = format.parse(list.get(6));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            this.lastAddedOnline = format.parse(list.get(7));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            this.lastBuyed = format.parse(list.get(8));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
 
     public void merge(Item item) {
