@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class Item implements Serializable {
     private String
@@ -71,6 +72,15 @@ public class Item implements Serializable {
         }
     }
 
+    public boolean isEqual(Item compareTo) {
+        if (Objects.equals(this.label, compareTo.getLabel()))
+            if (Objects.equals(this.comment, compareTo.getComment()))
+                if (this.amountTotal.compareTo(getAmountTotal()) == 0)
+                    return true;
+        return false;
+
+    }
+
     public void merge(Item item) {
 
         if (!this.label.toLowerCase().contains(item.getLabel().toLowerCase()))
@@ -107,7 +117,7 @@ public class Item implements Serializable {
         this.lastBuyed = item.getLastBuyed();
     }
 
-    private void clear() {
+    public void clear() {
 
         this.label = null;
         this.comment = null;

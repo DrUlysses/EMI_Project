@@ -20,6 +20,7 @@ public class AddScreen extends AppCompatActivity {
     private String sheetLabelText;
 
     private EditText
+        editSheetLabel,
         editItemLabel,
         editItemComment;
     private Button
@@ -43,11 +44,13 @@ public class AddScreen extends AppCompatActivity {
     }
 
     private void InitializeActivity() {
+        editSheetLabel = (EditText) findViewById(R.id.editSheetLabel);
         editItemLabel = (EditText) findViewById(R.id.editItemLabel);
         editItemComment = (EditText) findViewById(R.id.editItemComment);
         saveEditing = (Button) findViewById(R.id.saveEditing);
         cancelEditing = (Button) findViewById(R.id.cancelEditing);
 
+        editSheetLabel.setText(sheetLabelText);
         editItemLabel.setText(item.getLabel());
         editItemComment.setText(item.getComment());
 
@@ -77,6 +80,7 @@ public class AddScreen extends AppCompatActivity {
         item.setLabel(editItemLabel.getText().toString());
         item.setComment(editItemComment.getText().toString());
         item.setLastAdded(new Date());
+        sheetLabelText = editSheetLabel.getText().toString();
     }
 
 //    SpeechRecognizer recognizer;

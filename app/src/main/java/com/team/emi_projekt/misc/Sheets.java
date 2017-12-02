@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 
 public class Sheets implements Serializable {
@@ -56,7 +57,7 @@ public class Sheets implements Serializable {
 
     public Item getItem(String sheetLabel, String itemLabel) {
         if (current.containsKey(sheetLabel)) {
-            int pos = findItem(current.get(sheetLabel), itemLabel);
+            int pos = findItemInVector(current.get(sheetLabel), itemLabel);
             if(pos > -1)
                 return current.get(sheetLabel).get(pos);
         }
@@ -65,19 +66,31 @@ public class Sheets implements Serializable {
 
     public void setItem(String sheetLabel, String itemLabel, Item toSetItem) {
         if (current.containsKey(sheetLabel)) {
-            int pos = findItem(current.get(sheetLabel), itemLabel);
+            int pos = findItemInVector(current.get(sheetLabel), itemLabel);
             if(pos > -1)
                 current.get(sheetLabel).get(pos).setItem(toSetItem);
         }
     }
 
-    private int findItem(Vector<Item> items, String label) {
+    private int findItemInVector(Vector<Item> items, String label) {
         label = label.toLowerCase();
         for (Item item:items) {
             if (item.getLabel().toLowerCase().contains(label))
                 return items.indexOf(item);
         }
         return -1;
+    }
+
+    public void removeAll(Item item) {
+        //TODO: rework this
+        for(String sheet:current.keySet())
+            for(Item temp:current.get(sheet))
+                if (temp.isEqual(item))
+                    current.get(sheet).remove(temp);
+    }
+
+    public boolean hasSheet(String sheetLabel) {
+        return current.containsKey(sheetLabel);
     }
 
     private boolean searchToAdd(Vector<Item> items, Item item) {

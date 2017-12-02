@@ -20,6 +20,7 @@ import com.team.emi_projekt.adapter.SheetsAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MainScreen extends AppCompatActivity {
 
@@ -52,7 +53,15 @@ public class MainScreen extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO: creation of new item
+                Intent intent = new Intent(MainScreen.this, AddScreen.class);
+                Bundle bundle = new Bundle();
+                //This is bad. Really bad
+                Item item = new Item();
+                bundle.putSerializable("SheetLabel", "");
+                bundle.putSerializable("ItemLabel", "");
+                bundle.putSerializable("Item", item);
+                intent.putExtras(bundle);
+                startActivityForResult(intent, 1);
             }
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -69,8 +78,18 @@ public class MainScreen extends AppCompatActivity {
                 Item item = (Item) b.getSerializable("Item");
                 String sheetLabelText = (String) b.getSerializable("SheetLabel");
                 String itemLabelText = (String) b.getSerializable("ItemLabel");
-                sheets.setItem(sheetLabelText, itemLabelText, item);
-                ((SheetsAdapter) adapter).changeItemPreview(sheetLabelText, itemLabelText, item.getLabel(), item.getComment());
+                if (sheets.hasSheet(sheetLabelText)) {
+
+                    sheets.setItem(sheetLabelText, itemLabelText, item);
+                    ((SheetsAdapter) adapter).changeItemPreview(sheetLabelText, itemLabelText, item.getLabel(), item.getComment());
+                }
+                else {
+                    if (Objects.equals(itemLabelText, item.getLabel()))
+                        sheets.removeAll(item);
+                    sheets.addSheet(sheetLabelText);
+                    sheets.addItem(sheetLabelText, item);
+                    ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
+                }
                 ((SheetsAdapter) adapter).notifyDataSetChanged();
             }
         }

@@ -32,8 +32,14 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     public void changeItemPreview(String sheetLabel, String currentItemLabel, String newItemLabel, String newItemComment) {
         //Sorry for this, looks bad
         for (SheetPreview sheetPreview: sheetPreviews)
-            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase()))
+            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase())) {
                 sheetPreview.setItemNameAndComment(currentItemLabel, newItemLabel, newItemComment);
+                return;
+            }
+    }
+
+    public void setPreviews(List<SheetPreview> sheetPreviews) {
+        this.sheetPreviews = sheetPreviews;
     }
 
     public SheetsAdapter(Context context, List<SheetPreview> sheetPreviews, Sheets sheets) {
