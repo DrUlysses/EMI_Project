@@ -22,7 +22,7 @@ import static android.widget.Toast.makeText;
 
 public class SpeechRecognizer implements RecognitionListener {
     private Activity activity;
-    private TextView rootView;
+    //private TextView rootView;
 
     /* Named searches allow to quickly reconfigure the decoder */
     private static final String KWS_SEARCH = "wakeup";
@@ -39,7 +39,7 @@ public class SpeechRecognizer implements RecognitionListener {
 
     public SpeechRecognizer (Activity _activity) {
         this.activity = _activity;
-        this.rootView = (TextView)_activity.findViewById(R.id.caption_text);
+        //this.rootView = (TextView)_activity.findViewById(R.id.caption_text);
 
         /* Set answers for each sentence */
         captions = new HashMap<>();
@@ -69,7 +69,7 @@ public class SpeechRecognizer implements RecognitionListener {
             @Override
             protected void onPostExecute(Exception result) {
                 if (result != null) {
-                    rootView.setText("Failed to init recognizer " + result);
+                    //rootView.setText("Failed to init recognizer " + result);
                 } else {
                     switchSearch(KWS_SEARCH);
                 }
@@ -89,7 +89,7 @@ public class SpeechRecognizer implements RecognitionListener {
 
         /* Set answer phrase */
         String caption = this.activity.getResources().getString(captions.get(searchName));
-        rootView.setText(caption);
+        //rootView.setText(caption);
     }
 
     private void setupRecognizer(File assetsDir) throws IOException {
@@ -154,7 +154,7 @@ public class SpeechRecognizer implements RecognitionListener {
 
     @Override
     public void onResult(Hypothesis hypothesis) {
-        ((TextView) this.activity.findViewById(R.id.caption_text)).setText("");
+       // ((TextView) this.activity.findViewById(R.id.caption_text)).setText("");
         if (hypothesis != null) {
             String text = hypothesis.getHypstr();
             makeText(this.activity.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
@@ -163,7 +163,7 @@ public class SpeechRecognizer implements RecognitionListener {
 
     @Override
     public void onError(Exception e) {
-        ((TextView) this.activity.findViewById(R.id.caption_text)).setText(e.getMessage());
+       // ((TextView) this.activity.findViewById(R.id.caption_text)).setText(e.getMessage());
     }
 
     @Override

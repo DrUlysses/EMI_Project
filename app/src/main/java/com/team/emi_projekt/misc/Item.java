@@ -10,19 +10,30 @@ import java.util.List;
 import java.util.Locale;
 
 public class Item implements Serializable {
-    //Can be moved to the constructor
     private String
-        label = "",
-        comment = "";
-    private double
-        amount = 0.,
-        amountMonth = 0.,
-        amountYear = 0.,
-        amountTotal = 0.;
+        label, //contains more than one name (%name1% | %name2%)
+        comment;
+    private Double
+        amount,
+        amountMonth,
+        amountYear,
+        amountTotal;
     private Date
-        lastAdded = new Date(),
-        lastAddedOnline = new Date(),
-        lastBuyed = new Date();
+        lastAdded,
+        lastAddedOnline,
+        lastBuyed;
+
+    public Item() {
+        this.label = "";
+        this.comment = "";
+        this.amount = 0.;
+        this.amountMonth = 0.;
+        this.amountYear = 0.;
+        this.amountTotal = 0.;
+        this.lastAdded = new Date();
+        this.lastAddedOnline = new Date();
+        this.lastBuyed = new Date();
+    }
 
     public Item(String label, String comment) {
         this.label = label;
@@ -84,17 +95,29 @@ public class Item implements Serializable {
 
     }
 
+    public void setItem(Item item) {
+        this.label = item.getLabel();
+        this.comment = item.getComment();
+        this.amount =  item.getAmount();
+        this.amountMonth = item.getAmountMonth();
+        this.amountYear = item.getAmountYear();
+        this.amountTotal = item.getAmountTotal();
+        this.lastAdded = item.getLastAdded();
+        this.lastAddedOnline = item.getLastAddedOnline();
+        this.lastBuyed = item.getLastBuyed();
+    }
+
     private void clear() {
 
-        this.label = "";
-        this.comment = "";
-        this.amount = 0.;
-        this.amountMonth = 0.;
-        this.amountYear = 0.;
-        this.amountTotal = 0.;
-        this.lastAdded = new Date();
-        this.lastAddedOnline = new Date();
-        this.lastBuyed = new Date();
+        this.label = null;
+        this.comment = null;
+        this.amount = null;
+        this.amountMonth = null;
+        this.amountYear = null;
+        this.amountTotal = null;
+        this.lastAdded = null;
+        this.lastAddedOnline = null;
+        this.lastBuyed = null;
 
     }
 

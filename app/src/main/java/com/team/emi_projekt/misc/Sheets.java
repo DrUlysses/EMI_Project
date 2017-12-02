@@ -54,6 +54,32 @@ public class Sheets implements Serializable {
                 current.get(sheet).add(item);
     }
 
+    public Item getItem(String sheetLabel, String itemLabel) {
+        if (current.containsKey(sheetLabel)) {
+            int pos = findItem(current.get(sheetLabel), itemLabel);
+            if(pos > -1)
+                return current.get(sheetLabel).get(pos);
+        }
+        return null;
+    }
+
+    public void setItem(String sheetLabel, String itemLabel, Item toSetItem) {
+        if (current.containsKey(sheetLabel)) {
+            int pos = findItem(current.get(sheetLabel), itemLabel);
+            if(pos > -1)
+                current.get(sheetLabel).get(pos).setItem(toSetItem);
+        }
+    }
+
+    private int findItem(Vector<Item> items, String label) {
+        label = label.toLowerCase();
+        for (Item item:items) {
+            if (item.getLabel().toLowerCase().contains(label))
+                return items.indexOf(item);
+        }
+        return -1;
+    }
+
     private boolean searchToAdd(Vector<Item> items, Item item) {
         String label = item.getLabel().toLowerCase();
         for (Item temp : items) {
