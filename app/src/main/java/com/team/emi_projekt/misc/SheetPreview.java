@@ -30,6 +30,14 @@ public class SheetPreview {
         this.itemNames = itemNames;
     }
 
+    public void setItemNameAndComment(String currentName, String newName, String newComment) {
+        int index = itemNames.indexOf(currentName);
+        if (index != -1) {
+            itemNames.set(index, newName);
+            itemComments.set(index, newComment);
+        }
+    }
+
     public List<String> getItemComments() {
         return itemComments;
     }

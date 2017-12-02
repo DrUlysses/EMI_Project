@@ -283,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("Sheets", sheets);
                 intent.putExtras(bundle);
-                startActivityForResult(intent, 1);
+                startActivity(intent);
             }
         }
 

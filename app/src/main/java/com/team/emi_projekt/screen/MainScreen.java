@@ -27,10 +27,6 @@ public class MainScreen extends AppCompatActivity {
     private ExpandableListView listView;
     private ExpandableListAdapter adapter;
 
-    private TextView itemLabel;
-    private TextView itemComment;
-    private TextView sheetLabel;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,11 +45,6 @@ public class MainScreen extends AppCompatActivity {
         adapter = new SheetsAdapter(this, previews, sheets);
         listView.setAdapter(adapter);
 
-        itemLabel = (TextView) findViewById(R.id.itemLabel);
-        itemComment = (TextView) findViewById(R.id.itemComment);
-        sheetLabel = (TextView) findViewById(R.id.sheetLabel);
-
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -67,6 +58,7 @@ public class MainScreen extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
+
     //TODO: use onFocus or smth, + get data from addScreen normally
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -78,8 +70,8 @@ public class MainScreen extends AppCompatActivity {
                 String sheetLabelText = (String) b.getSerializable("SheetLabel");
                 String itemLabelText = (String) b.getSerializable("ItemLabel");
                 sheets.setItem(sheetLabelText, itemLabelText, item);
-                itemLabel.setText(item.getLabel());
-                itemComment.setText(item.getComment());
+                ((SheetsAdapter) adapter).changeItemPreview(sheetLabelText, itemLabelText, item.getLabel(), item.getComment());
+                ((SheetsAdapter) adapter).notifyDataSetChanged();
             }
         }
     }

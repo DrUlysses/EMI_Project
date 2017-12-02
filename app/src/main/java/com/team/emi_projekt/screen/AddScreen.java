@@ -33,6 +33,7 @@ public class AddScreen extends AppCompatActivity {
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
+            //Still bad
             item = (Item)getIntent().getSerializableExtra("Item");
             itemLabelText = (String)getIntent().getSerializableExtra("ItemLabel");
             sheetLabelText = (String)getIntent().getSerializableExtra("SheetLabel");

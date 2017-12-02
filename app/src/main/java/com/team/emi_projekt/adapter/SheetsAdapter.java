@@ -1,9 +1,12 @@
 package com.team.emi_projekt.adapter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +20,6 @@ import com.team.emi_projekt.misc.Item;
 import com.team.emi_projekt.misc.SheetPreview;
 import com.team.emi_projekt.misc.Sheets;
 import com.team.emi_projekt.screen.AddScreen;
-import com.team.emi_projekt.screen.MainScreen;
 
 import java.util.List;
 
@@ -26,6 +28,13 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     private Context context;
     private List<SheetPreview> sheetPreviews;
     private Sheets sheets;
+
+    public void changeItemPreview(String sheetLabel, String currentItemLabel, String newItemLabel, String newItemComment) {
+        //Sorry for this, looks bad
+        for (SheetPreview sheetPreview: sheetPreviews)
+            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase()))
+                sheetPreview.setItemNameAndComment(currentItemLabel, newItemLabel, newItemComment);
+    }
 
     public SheetsAdapter(Context context, List<SheetPreview> sheetPreviews, Sheets sheets) {
         this.context = context;
@@ -84,7 +93,7 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     }
 
     @Override
-    public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+    public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
         SheetPreview temp = (SheetPreview)getChild(groupPosition, childPosition);
         final String itemLabelText = temp.getItemNames().get(childPosition);
         final String itemCommentText = temp.getItemComments().get(childPosition);
@@ -102,17 +111,22 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
         itemLabel.setText(itemLabelText);
         itemComment.setText(itemCommentText);
 
+        //TODO: start to use some database instead of this crap
         itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, AddScreen.class);
                 Bundle bundle = new Bundle();
+                //This is bad. Really bad
                 Item item = sheets.getItem(sheetLabelText, itemLabelText);
                 bundle.putSerializable("SheetLabel", sheetLabelText);
                 bundle.putSerializable("ItemLabel", itemLabelText);
                 bundle.putSerializable("Item", item);
                 intent.putExtras(bundle);
-                context.startActivity(intent);
+                if (context instanceof AppCompatActivity)
+                    ((Activity) context).startActivityForResult(intent, 1);
+                else
+                    Log.e("err","context must be an instanceof Activity");
             }
         });
 
