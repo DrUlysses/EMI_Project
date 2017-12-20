@@ -3,6 +3,7 @@ package com.team.emi_projekt;
 import android.Manifest;
 
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -18,13 +19,13 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
-import android.text.TextUtils;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -38,6 +39,8 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.team.emi_projekt.misc.Item;
 import com.team.emi_projekt.misc.Sheets;
@@ -48,6 +51,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -59,7 +63,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private TextView mOutputText;
     private Button mCallApiButton;
-    //TODO: change this object call/looks like crap now
     private Sheets sheets;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
@@ -68,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
 
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY};
+    private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
     //TODO: overwrite onResult
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +117,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             new MakeRequestTask(mCredential).execute();
         }
     }
+
+    private void setResults() {
+        if (!isGooglePlayServicesAvailable()) {
+            acquireGooglePlayServices();
+        } else if (mCredential.getSelectedAccountName() == null) {
+            chooseAccount();
+        } else if (!isDeviceOnline()) {
+            //TODO: change to the dialog window, where u must to turn on the internet or close the app
+            mOutputText.setText("No network connection available. Please get an internet connection");
+        } else {
+            new MakeUploadTask(mCredential).execute();
+        }
+    }
+
 
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
     private void chooseAccount() {
@@ -170,6 +187,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     getResultsFromApi();
                 }
                 break;
+            case Activity.RESULT_FIRST_USER:
+                Sheets temp = (Sheets) data.getSerializableExtra("Sheets");
+                if (temp != null) {
+                    sheets = temp;
+                    setResults();
+                }
+                break;
         }
     }
 
@@ -218,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.sheets.v4.Sheets.Builder(
                     transport, jsonFactory, credential)
-                    .setApplicationName("Google Sheets API Android Quickstart")
+                    .setApplicationName("EMI_Projekt")
                     .build();
         }
 
@@ -258,11 +282,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
-                     //TODO: Probably move this method to the Sheets
-               for (List row : values) {
-                   Item tempItem = new Item(row);
-                   sheets.addItem(sheet, tempItem);
-               }
+                //TODO: Probably move this method to the Sheets
+                for (List row : values) {
+                    Item tempItem = new Item(row, sheet);
+                    sheets.addItem(sheet, tempItem);
+                }
             }
             return true;
         }
@@ -283,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("Sheets", sheets);
                 intent.putExtras(bundle);
-                startActivity(intent);
+                startActivityForResult(intent, Activity.RESULT_FIRST_USER);
             }
         }
 
@@ -305,6 +329,107 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 }
             } else {
                 mOutputText.setText("Request cancelled.");
+            }
+        }
+    }
+
+    private class MakeUploadTask extends AsyncTask<Void, Void, Boolean> {
+
+        private com.google.api.services.sheets.v4.Sheets mService = null;
+        private Exception mLastError = null;
+
+        MakeUploadTask(GoogleAccountCredential credential) {
+            HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                    transport, jsonFactory, credential)
+                    .setApplicationName("EMI_Projekt")
+                    .build();
+        }
+
+        /**
+         * Background task to call Google Sheets API.
+         *
+         * @param params no parameters needed for this task.
+         */
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                return getDataFromApi();
+            } catch (Exception e) {
+                mLastError = e;
+                cancel(true);
+                return false;
+            }
+        }
+
+        /**
+         * TODO: set spreadsheet generator
+         * EMI test spreadsheet
+         * https://docs.google.com/spreadsheets/d/1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug/edit?usp=sharing
+         *
+         * @return List of names and majors
+         * @throws IOException
+         */
+        private Boolean getDataFromApi() throws IOException {
+
+            String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
+            String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
+            Set<String> sheetLabels = sheets.getLabels();
+            List<ValueRange> data = new ArrayList<ValueRange>();
+            if (sheets.getLabels() != null) {
+                for (String sheetLabel : sheetLabels) {
+                    List<List<Object>> values = sheets.getItemsData(sheetLabel);
+                    data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
+                }
+                BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
+                        .setValueInputOption("RAW")
+                        .setData(data);
+                BatchUpdateValuesResponse result =
+                        mService.spreadsheets().values().batchUpdate(id, body).execute();
+            }
+            return true;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgress.show();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean output) {
+            mProgress.hide();
+            if (!output) {
+                Toast.makeText(MainActivity.this, "No results Uploaded.", Toast.LENGTH_LONG).show();
+            } else {
+                Intent intent = new Intent(MainActivity.this, MainScreen.class);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("Sheets", sheets);
+                intent.putExtras(bundle);
+                Toast.makeText(MainActivity.this, "Succeed sync", Toast.LENGTH_LONG).show();
+                startActivityForResult(intent, Activity.RESULT_FIRST_USER);
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            if (mLastError != null) {
+                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                    showGooglePlayServicesAvailabilityErrorDialog(
+                            ((GooglePlayServicesAvailabilityIOException) mLastError)
+                                    .getConnectionStatusCode());
+                } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                    startActivityForResult(
+                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                            MainActivity.REQUEST_AUTHORIZATION);
+                } else {
+                    mProgress.setMessage("The following error occurred:\n"
+                            + mLastError.getMessage());
+                    Toast.makeText(MainActivity.this, "The following error occurred:\n"
+                            + mLastError.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "Sync was cancelled", Toast.LENGTH_LONG).show();
             }
         }
     }

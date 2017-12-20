@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -13,7 +14,8 @@ import java.util.Objects;
 public class Item implements Serializable {
     private String
         label, //contains more than one name (%name1% | %name2%)
-        comment;
+        comment,
+        sheet;
     private Double
         amount,
         amountMonth,
@@ -27,6 +29,7 @@ public class Item implements Serializable {
     public Item() {
         this.label = "";
         this.comment = "";
+        this.sheet = "";
         this.amount = 0.;
         this.amountMonth = 0.;
         this.amountYear = 0.;
@@ -36,17 +39,20 @@ public class Item implements Serializable {
         this.lastBuyed = new Date();
     }
 
-    public Item(String label, String comment) {
+    public Item(String label, String comment, String sheet) {
         this.label = label;
         this.comment = comment;
+        this.sheet = sheet;
     }
 
-    public Item(List<String> list) {
+    public Item(List<String> list, String sheet) {
 
         DateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 
         this.label = list.get(0);
         this.comment = list.get(1);
+
+        this.sheet = sheet;
 
         this.amount = Double.parseDouble(list.get(2));
         this.amountMonth = Double.parseDouble(list.get(3));
@@ -72,11 +78,30 @@ public class Item implements Serializable {
         }
     }
 
+    public List<Object> getData() {
+        List<Object> result = new ArrayList<>();
+
+        result.add(this.label);
+        result.add(this.comment);
+
+        result.add(Double.toString(this.amount));
+        result.add(Double.toString(this.amountMonth));
+        result.add(Double.toString(this.amountYear));
+        result.add(Double.toString(this.amountTotal));
+
+        result.add(this.lastAdded.toString());
+        result.add(this.lastAddedOnline.toString());
+        result.add(this.lastBuyed.toString());
+
+        return result;
+    }
+
     public boolean isEqual(Item compareTo) {
-        if (Objects.equals(this.label, compareTo.getLabel()))
-            if (Objects.equals(this.comment, compareTo.getComment()))
-                if (this.amountTotal.compareTo(getAmountTotal()) == 0)
-                    return true;
+        if (Objects.equals(this.sheet, compareTo.getSheet()))
+            if (Objects.equals(this.label, compareTo.getLabel()))
+                if (Objects.equals(this.comment, compareTo.getComment()))
+                    if (this.amountTotal.compareTo(getAmountTotal()) == 0.)
+                        return true;
         return false;
 
     }
@@ -105,9 +130,10 @@ public class Item implements Serializable {
 
     }
 
-    public void setItem(Item item) {
+    public void replaceItem(Item item) {
         this.label = item.getLabel();
         this.comment = item.getComment();
+        this.sheet = item.getSheet();
         this.amount =  item.getAmount();
         this.amountMonth = item.getAmountMonth();
         this.amountYear = item.getAmountYear();
@@ -121,6 +147,7 @@ public class Item implements Serializable {
 
         this.label = null;
         this.comment = null;
+        this.sheet = null;
         this.amount = null;
         this.amountMonth = null;
         this.amountYear = null;
@@ -145,6 +172,14 @@ public class Item implements Serializable {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public String getSheet() {
+        return sheet;
+    }
+
+    public void setSheet(String sheet) {
+        this.sheet = sheet;
     }
 
     public double getAmount() {

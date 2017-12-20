@@ -79,8 +79,8 @@ public class AddScreen extends AppCompatActivity {
     private void applyEditing() {
         item.setLabel(editItemLabel.getText().toString());
         item.setComment(editItemComment.getText().toString());
+        item.setSheet(editSheetLabel.getText().toString());
         item.setLastAdded(new Date());
-        sheetLabelText = editSheetLabel.getText().toString();
     }
 
 //    SpeechRecognizer recognizer;

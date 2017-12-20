@@ -4,15 +4,27 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 import java.util.Vector;
 
 public class Sheets implements Serializable {
-    //TODO: change this to the another data structure
     private HashMap<String, Vector<Item>> current;
 
     public Sheets() {
         current = new HashMap<>();
+    }
+
+    public Set<String> getLabels() {
+        return current.keySet();
+    }
+
+    public List<List<Object>> getItemsData(String sheetLabel) {
+        List<List<Object>> result = new ArrayList<>();
+
+        for(Item item : current.get(sheetLabel))
+            result.add(item.getData());
+
+        return result;
     }
 
     public List<SheetPreview> getPreviews() {
@@ -49,10 +61,21 @@ public class Sheets implements Serializable {
         if (current.containsKey(sheet))
             if (current.get(sheet).contains(item))
                 return;
-            else if (searchToAdd(current.get(sheet), item))
+            else if (searchToMerge(current.get(sheet), item))
                 return;
             else
                 current.get(sheet).add(item);
+    }
+
+    private boolean searchToMerge(Vector<Item> items, Item item) {
+        String label = item.getLabel().toLowerCase();
+        for (Item temp : items) {
+            if (temp.getLabel().toLowerCase().contains(label)) {
+                temp.merge(item);
+                return true;
+            }
+        }
+        return false;
     }
 
     public Item getItem(String sheetLabel, String itemLabel) {
@@ -64,11 +87,11 @@ public class Sheets implements Serializable {
         return null;
     }
 
-    public void setItem(String sheetLabel, String itemLabel, Item toSetItem) {
+    public void replaceItem(String sheetLabel, String itemLabel, Item toReplaceItem) {
         if (current.containsKey(sheetLabel)) {
             int pos = findItemInVector(current.get(sheetLabel), itemLabel);
             if(pos > -1)
-                current.get(sheetLabel).get(pos).setItem(toSetItem);
+                current.get(sheetLabel).get(pos).replaceItem(toReplaceItem);
         }
     }
 
@@ -89,19 +112,29 @@ public class Sheets implements Serializable {
                     current.get(sheet).remove(temp);
     }
 
+    private void removeItem(String fromSheet, String itemLabel) {
+        if (current.containsKey(fromSheet)) {
+            int pos = findItemInVector(current.get(fromSheet), itemLabel);
+            if (pos != -1)
+                current.get(fromSheet).remove(pos);
+        }
+    }
+
+    public void moveItem(Item item, String prevSheet) {
+        if (current.containsKey(prevSheet))
+            removeItem(prevSheet, item.getLabel());
+        if (current.containsKey(item.getSheet()))
+            addItem(item.getSheet(), item);
+    }
+
     public boolean hasSheet(String sheetLabel) {
         return current.containsKey(sheetLabel);
     }
 
-    private boolean searchToAdd(Vector<Item> items, Item item) {
-        String label = item.getLabel().toLowerCase();
-        for (Item temp : items) {
-            if (temp.getLabel().toLowerCase().contains(label)) {
-                temp.merge(item);
+    public boolean hasItemLabel(String  sheetLabel, String itemLabel) {
+        if (current.containsKey(sheetLabel))
+            if (findItemInVector(current.get(sheetLabel), itemLabel) != -1)
                 return true;
-            }
-        }
         return false;
     }
-
 }
