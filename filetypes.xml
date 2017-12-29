@@ -3,6 +3,7 @@
     <extensionMap>
       <mapping ext="dmp" type="PLAIN_TEXT" />
       <mapping ext="dic" type="PLAIN_TEXT" />
+      <mapping ext="emi" type="PLAIN_TEXT" />
     </extensionMap>
   </component>
 </application>
