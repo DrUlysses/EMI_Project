@@ -44,6 +44,7 @@ import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.team.emi_projekt.misc.Item;
 import com.team.emi_projekt.misc.Sheets;
+import com.team.emi_projekt.misc.SheetsReader;
 import com.team.emi_projekt.screen.MainScreen;
 
 import java.io.IOException;
@@ -188,7 +189,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 }
                 break;
             case Activity.RESULT_FIRST_USER:
-                Sheets temp = (Sheets) data.getSerializableExtra("Sheets");
+                Sheets temp = SheetsReader.loadSheets(MainActivity.this);
                 if (temp != null) {
                     sheets = temp;
                     setResults();
@@ -276,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             String sheet = "MyList";
             sheets.addSheet(sheet);
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
-            //TODO: call this inside of other class
+            //TODO: call this inside of another class
             ValueRange response = this.mService.spreadsheets().values()
                     .get(id, sheet + "!" + range)
                     .execute();
@@ -304,9 +305,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mOutputText.setText("No results returned.");
             } else {
                 Intent intent = new Intent(MainActivity.this, MainScreen.class);
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("Sheets", sheets);
-                intent.putExtras(bundle);
+                SheetsReader.storeSheets(MainActivity.this, sheets);
                 startActivityForResult(intent, Activity.RESULT_FIRST_USER);
             }
         }
@@ -403,9 +402,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 Toast.makeText(MainActivity.this, "No results Uploaded.", Toast.LENGTH_LONG).show();
             } else {
                 Intent intent = new Intent(MainActivity.this, MainScreen.class);
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("Sheets", sheets);
-                intent.putExtras(bundle);
+                SheetsReader.storeSheets(MainActivity.this, sheets);
                 Toast.makeText(MainActivity.this, "Succeed sync", Toast.LENGTH_LONG).show();
                 startActivityForResult(intent, Activity.RESULT_FIRST_USER);
             }

@@ -13,12 +13,10 @@ import android.widget.ExpandableListView;
 
 import com.team.emi_projekt.R;
 import com.team.emi_projekt.misc.Item;
-import com.team.emi_projekt.misc.SheetPreview;
 import com.team.emi_projekt.misc.Sheets;
 import com.team.emi_projekt.adapter.SheetsAdapter;
+import com.team.emi_projekt.misc.SheetsReader;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class MainScreen extends AppCompatActivity {
@@ -35,16 +33,10 @@ public class MainScreen extends AppCompatActivity {
 
         syncButton = (Button) findViewById(R.id.syncButton);
 
-        List<SheetPreview> previews = new ArrayList<>();
-
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            sheets = (Sheets) getIntent().getSerializableExtra("Sheets");
-            previews = sheets.getPreviews();
-        }
+        sheets = SheetsReader.loadSheets(this);
 
         listView = (ExpandableListView) findViewById(R.id.sheetsList);
-        adapter = new SheetsAdapter(this, previews, sheets);
+        adapter = new SheetsAdapter(this, sheets.getPreviews(), sheets);
         listView.setAdapter(adapter);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -53,7 +45,7 @@ public class MainScreen extends AppCompatActivity {
         syncButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getIntent().putExtra("Sheets", sheets);
+                SheetsReader.storeSheets(MainScreen.this, sheets);
                 setResult(Activity.RESULT_FIRST_USER, getIntent());
                 finish();
             }
@@ -87,53 +79,44 @@ public class MainScreen extends AppCompatActivity {
                 Item item = (Item) b.getSerializable("Item");
                 String sheetLabelText = (String) b.getSerializable("SheetLabel");
                 String itemLabelText = (String) b.getSerializable("ItemLabel");
-                if (Objects.equals(sheetLabelText, "")) {
+                if (Objects.equals(sheetLabelText, "")) { //TODO: too much checks, must reforge this
                     if (sheets.hasSheet(item.getSheet())) {
                         Item temp = sheets.getItem(item.getSheet(), item.getLabel());
-                        if (temp != null) {
-                            if (Objects.equals(temp.getComment(), item.getComment()))
-                                return;
-                            else {
-                                sheets.getItem(item.getSheet(), item.getLabel()).merge(item);
-                                ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                                ((SheetsAdapter) adapter).notifyDataSetChanged();
+                        if (temp != null)
+                            if (!Objects.equals(temp.getComment(), item.getComment())) {
+                                sheets.getItem(item.getSheet(), item.getLabel()).update(item);
                                 return;
                             }
-                        }
                     } else {
                         sheets.addSheet(item.getSheet());
                     }
-                    sheets.addItem(item.getSheet(), item); //here can be bug
-                    ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                    ((SheetsAdapter) adapter).notifyDataSetChanged();
-                    return;
+                    sheets.addItem(item.getSheet(), item);
                 } else if (!Objects.equals(item.getSheet(), sheetLabelText)) {
                     sheets.moveItem(item, sheetLabelText);
-                    ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                    ((SheetsAdapter) adapter).notifyDataSetChanged();
-                    return;
                 } else if (!Objects.equals(item.getLabel(), itemLabelText)) {
                     if (sheets.hasItemLabel(item.getLabel(), sheetLabelText)) {
-                        sheets.getItem(sheetLabelText, item.getLabel()).merge(item);
-                        ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                        ((SheetsAdapter) adapter).notifyDataSetChanged();
-                        return;
+                        sheets.getItem(sheetLabelText, item.getLabel()).update(item);
                     }
                     else {
                         sheets.addItem(sheetLabelText, item);
-                        ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                        ((SheetsAdapter) adapter).notifyDataSetChanged();
-                        return;
                     }
-
                 } else {
                     Item temp = sheets.getItem(sheetLabelText, itemLabelText);
-                    if (!Objects.equals(item.getComment(), temp.getComment()))
-                        sheets.getItem(sheetLabelText, itemLabelText).setComment(item.getComment());
-                    ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
-                    ((SheetsAdapter) adapter).notifyDataSetChanged();
+                    if (!Objects.equals(item.getComment(), temp.getComment())) {
+                        sheets.getItem(sheetLabelText, itemLabelText).update(item);
+                    }
                 }
             }
         }
+        changePreviews();
     }
+
+    void changePreviews() {
+        ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
+        ((SheetsAdapter) adapter).notifyDataSetChanged();
+        SheetsReader.storeSheets(this, sheets);
+    }
+
+
+
 }

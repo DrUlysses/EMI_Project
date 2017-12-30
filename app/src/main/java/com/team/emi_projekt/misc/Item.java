@@ -1,6 +1,5 @@
 package com.team.emi_projekt.misc;
 
-
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -21,6 +20,9 @@ public class Item implements Serializable {
         amountMonth,
         amountYear,
         amountTotal;
+    private DateFormat
+            format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+
     private Date
         lastAdded,
         lastAddedOnline,
@@ -40,14 +42,20 @@ public class Item implements Serializable {
     }
 
     public Item(String label, String comment, String sheet) {
+
         this.label = label;
         this.comment = comment;
         this.sheet = sheet;
+        this.amount = 0.;
+        this.amountMonth = 0.;
+        this.amountYear = 0.;
+        this.amountTotal = 0.;
+        this.lastAdded = new Date();
+        this.lastAddedOnline = new Date();
+        this.lastBuyed = new Date();
     }
 
     public Item(List<String> list, String sheet) {
-
-        DateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 
         this.label = list.get(0);
         this.comment = list.get(1);
@@ -89,9 +97,19 @@ public class Item implements Serializable {
         result.add(Double.toString(this.amountYear));
         result.add(Double.toString(this.amountTotal));
 
-        result.add(this.lastAdded.toString());
-        result.add(this.lastAddedOnline.toString());
-        result.add(this.lastBuyed.toString());
+        result.add(format.format(this.lastAdded));
+        result.add(format.format(this.lastAddedOnline));
+        result.add(format.format(this.lastBuyed));
+
+        return result;
+    }
+
+    public String getDataAsString() {
+        String result = "";
+        List<Object> info = this.getData();
+
+        for ( Object data : info )
+            result += (String)data + "|";
 
         return result;
     }
@@ -103,6 +121,34 @@ public class Item implements Serializable {
                     if (this.amountTotal.compareTo(getAmountTotal()) == 0.)
                         return true;
         return false;
+
+    }
+
+    public void update(Item item) {
+
+        if (!this.label.toLowerCase().equals(item.getLabel().toLowerCase()))
+            this.setLabel(item.getLabel());
+
+        if (!this.comment.toLowerCase().equals(item.getComment().toLowerCase()))
+            this.setComment(item.getComment());
+
+        if (!this.amount.equals(item.getAmount()))
+            this.amount = item.getAmount();
+        if (!this.amountMonth.equals(item.getAmountMonth()))
+            this.amountMonth = item.getAmountMonth();
+        if (!this.amountYear.equals(item.getAmountYear()))
+            this.amountYear = item.getAmountYear();
+        if (!this.amountTotal.equals(item.getAmountTotal()))
+            this.amountTotal = item.getAmountTotal();
+
+        if (!this.lastAdded.equals(item.getLastAdded()))
+            this.lastAdded = item.getLastAdded();
+
+        if (this.lastAddedOnline.equals(item.getLastAddedOnline()))
+            this.lastAddedOnline = item.getLastAddedOnline();
+
+        if (this.lastBuyed.equals(item.getLastBuyed()))
+            this.lastBuyed = item.getLastBuyed();
 
     }
 

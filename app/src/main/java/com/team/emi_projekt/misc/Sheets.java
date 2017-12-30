@@ -2,6 +2,7 @@ package com.team.emi_projekt.misc;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +26,46 @@ public class Sheets implements Serializable {
             result.add(item.getData());
 
         return result;
+    }
+
+    private String getSheetData(String sheetLabel) {
+        String result = "";
+
+        for (Item item : current.get(sheetLabel))
+            result += item.getDataAsString() + "\n"; //TODO: change from += to StringFormat
+
+        return result;
+    }
+
+    public String getSheetsData() {
+        String result = "";
+
+        for (String sheetLabel : current.keySet())
+            result += sheetLabel + "{" + getSheetData(sheetLabel) + "}";
+
+        return result;
+    }
+
+    public void addSheetData(String sheetAsString) {
+        String temp = "";
+        String sheetLabel = "";
+        Item tempItem;
+
+        for (char current : sheetAsString.toCharArray()) {
+            if (current == '{') {
+                sheetLabel = temp;
+                addSheet(sheetLabel);
+                temp = "";
+            }
+            else if (current == '\n') {
+                List<String> itemData = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
+                tempItem = new Item(itemData, sheetLabel);
+                addItem(sheetLabel, tempItem);
+                temp = "";
+            }
+            else
+                temp += current;
+        }
     }
 
     public List<SheetPreview> getPreviews() {
