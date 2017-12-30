@@ -79,7 +79,9 @@ public class MainScreen extends AppCompatActivity {
                 Item item = (Item) b.getSerializable("Item");
                 String sheetLabelText = (String) b.getSerializable("SheetLabel");
                 String itemLabelText = (String) b.getSerializable("ItemLabel");
-                if (Objects.equals(sheetLabelText, "")) { //TODO: too much checks, must reforge this
+                if (Objects.equals(item.getLabel(), "") && Objects.equals(item.getSheet(), "")) {
+                    sheets.removeItem(sheetLabelText, itemLabelText, item.getComment());
+                } else if (Objects.equals(sheetLabelText, "")) { //TODO: too many checks, must reforge whole method
                     if (sheets.hasSheet(item.getSheet())) {
                         Item temp = sheets.getItem(item.getSheet(), item.getLabel());
                         if (temp != null)
@@ -94,7 +96,7 @@ public class MainScreen extends AppCompatActivity {
                 } else if (!Objects.equals(item.getSheet(), sheetLabelText)) {
                     sheets.moveItem(item, sheetLabelText);
                 } else if (!Objects.equals(item.getLabel(), itemLabelText)) {
-                    if (sheets.hasItemLabel(item.getLabel(), sheetLabelText)) {
+                    if (sheets.hasItemLabel(sheetLabelText, item.getLabel())) {
                         sheets.getItem(sheetLabelText, item.getLabel()).update(item);
                     }
                     else {

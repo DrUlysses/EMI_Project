@@ -33,7 +33,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.team.emi_projekt.MainActivity" />
         </activity>
-        <activity android:name=".screen.AddScreen" />
+        <activity
+            android:name=".screen.AddScreen"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

@@ -25,7 +25,8 @@ public class AddScreen extends AppCompatActivity {
         editItemComment;
     private Button
         saveEditing,
-        cancelEditing;
+        cancelEditing,
+        deleteItem;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,6 +50,7 @@ public class AddScreen extends AppCompatActivity {
         editItemComment = (EditText) findViewById(R.id.editItemComment);
         saveEditing = (Button) findViewById(R.id.saveEditing);
         cancelEditing = (Button) findViewById(R.id.cancelEditing);
+        deleteItem = (Button) findViewById(R.id.deleteEditedItem);
 
         editSheetLabel.setText(sheetLabelText);
         editItemLabel.setText(item.getLabel());
@@ -71,6 +73,22 @@ public class AddScreen extends AppCompatActivity {
         cancelEditing.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                finish();
+            }
+        });
+
+        deleteItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                applyEditing();
+                item.setLabel("");
+                item.setSheet("");
+
+                getIntent().putExtra("Item", item);
+                getIntent().putExtra("ItemLabel", itemLabelText);
+                getIntent().putExtra("SheetLabel", sheetLabelText);
+
+                setResult(Activity.RESULT_OK, getIntent());
                 finish();
             }
         });

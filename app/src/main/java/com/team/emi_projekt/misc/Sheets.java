@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 
@@ -145,12 +146,11 @@ public class Sheets implements Serializable {
         return -1;
     }
 
-    public void removeAll(Item item) {
-        //TODO: rework this
-        for(String sheet:current.keySet())
-            for(Item temp:current.get(sheet))
-                if (temp.isEqual(item))
-                    current.get(sheet).remove(temp);
+    public void removeItem(String sheetLabel, String itemLabel, String itemComment) {
+        for(Item item : current.get(sheetLabel)) {
+            if (Objects.equals(item.getLabel(), itemLabel) && Objects.equals(item.getComment(), itemComment))
+                current.get(sheetLabel).remove(item);
+        }
     }
 
     private void removeItem(String fromSheet, String itemLabel) {
