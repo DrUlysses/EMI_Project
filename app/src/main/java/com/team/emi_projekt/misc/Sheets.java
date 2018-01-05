@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,13 +12,37 @@ import java.util.Vector;
 
 public class Sheets implements Serializable {
     private HashMap<String, Vector<Item>> current;
+    private HashMap<String, String> currentKeys; //Key == labels for display, Value == formatted String label|userName|groupMemberName
+    private String privateKey;
 
     public Sheets() {
         current = new HashMap<>();
+        currentKeys = new HashMap<>();
+        privateKey = "";
+    }
+
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+    }
+
+    public String getPrivateKey() {
+        return privateKey;
     }
 
     public Set<String> getLabels() {
         return current.keySet();
+    }
+
+    public Set<String> getFullLabels() {
+        //Yeah
+        return new HashSet<>(currentKeys.values());
+    }
+
+    public String getFullLabel(String sheetLabel) {
+        if (currentKeys.containsKey(sheetLabel))
+            return sheetLabel + "\\|" + currentKeys.get(sheetLabel);
+        else
+            return ""; //mb can return null
     }
 
     public List<List<Object>> getItemsData(String sheetLabel) {
@@ -42,7 +67,7 @@ public class Sheets implements Serializable {
         String result = "";
 
         for (String sheetLabel : current.keySet())
-            result += sheetLabel + "{" + getSheetData(sheetLabel) + "}";
+            result += getFullLabel(sheetLabel) + "{" + getSheetData(sheetLabel) + "}";
 
         return result;
     }
@@ -52,20 +77,22 @@ public class Sheets implements Serializable {
         String sheetLabel = "";
         Item tempItem;
 
-        for (char current : sheetAsString.toCharArray()) {
-            if (current == '{') {
-                sheetLabel = temp;
-                addSheet(sheetLabel);
+        for (char currentChar : sheetAsString.toCharArray()) {
+            if (currentChar == '{') {
+                List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
+                sheetLabel = fullSheetLabel.get(0);
+                //TODO: handle duplicate labels, sending an error msg or smth. Use full names only on download-save-load-upload states
+                addSheet(temp);
                 temp = "";
             }
-            else if (current == '\n') {
+            else if (currentChar == '\n') {
                 List<String> itemData = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
                 tempItem = new Item(itemData, sheetLabel);
                 addItem(sheetLabel, tempItem);
                 temp = "";
             }
             else
-                temp += current;
+                temp += currentChar;
         }
     }
 
@@ -77,8 +104,12 @@ public class Sheets implements Serializable {
     }
 
     public void addSheet(String name) {
-        if (!current.containsKey(name))
-            current.put(name, new Vector<Item>());
+        List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(name.split("\\|")));
+        String sheetLabel = fullSheetLabel.get(0);
+        if (!current.containsKey(sheetLabel)) {
+            current.put(sheetLabel, new Vector<Item>());
+            currentKeys.put(sheetLabel, name);
+        }
     }
 
     private List<String> getLabels(String sheetName) {

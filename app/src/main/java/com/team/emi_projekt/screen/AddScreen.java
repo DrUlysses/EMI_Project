@@ -30,6 +30,7 @@ public class AddScreen extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        //TODO: add AutoCompleteTextView for Sheets TextView
         super.onCreate(savedInstanceState);
         setContentView(R.layout.add_screen);
 

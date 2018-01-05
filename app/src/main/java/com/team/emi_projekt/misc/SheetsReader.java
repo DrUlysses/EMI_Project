@@ -18,7 +18,7 @@ public class SheetsReader {
             /*
             Sheets format:
 
-            SheetLabel{ItemLabel|Itemsomething|ItemData|\nSecondItemBlaBla|\n}SecondSheetLabel{same}
+            SheetLabel|userName{ItemLabel|Itemsomething|ItemData|\nSecondItemBlaBla|\n}SecondSheetLabel|userName|secondUserName{same}
 
              */
             outputStream.close();

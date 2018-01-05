@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        sheets = new Sheets();
+        sheets = SheetsReader.loadSheets(this);
 
         mOutputText = (TextView) findViewById(R.id.loginText);
         mCallApiButton = (Button) findViewById(R.id.login);
@@ -115,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             //TODO: change to the dialog window, where u must to turn on the internet or close the app
             mOutputText.setText("No network connection available. Please get an internet connection");
         } else {
+            sheets.setPrivateKey(mCredential.getSelectedAccountName());
             new MakeRequestTask(mCredential).execute();
         }
     }
@@ -274,19 +275,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         private Boolean getDataFromApi() throws IOException {
 
             String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
-            String sheet = "MyList";
-            sheets.addSheet(sheet);
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
-            //TODO: call this inside of another class
-            ValueRange response = this.mService.spreadsheets().values()
-                    .get(id, sheet + "!" + range)
-                    .execute();
-            List<List<Object>> values = response.getValues();
-            if (values != null) {
-                //TODO: Probably move this method to the Sheets
-                for (List row : values) {
-                    Item tempItem = new Item(row, sheet);
-                    sheets.addItem(sheet, tempItem);
+            for (String sheet : sheets.getFullLabels()) { //TODO: handle, if its == null
+                ValueRange response = this.mService.spreadsheets().values()
+                        .get(id, sheet + "!" + range)
+                        .execute();
+                List<List<Object>> values = response.getValues();
+                if (values != null) {
+                    //TODO: Probably move this method to the Sheets
+                    for (List row : values) {
+                        Item tempItem = new Item(row, sheet);
+                        sheets.addItem(sheet, tempItem);
+                    }
                 }
             }
             return true;
@@ -374,18 +374,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
-            Set<String> sheetLabels = sheets.getLabels();
             List<ValueRange> data = new ArrayList<ValueRange>();
             if (sheets.getLabels() != null) {
-                for (String sheetLabel : sheetLabels) {
+                for (String sheetLabel : sheets.getLabels()) {
                     List<List<Object>> values = sheets.getItemsData(sheetLabel);
-                    data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
+                    data.add(new ValueRange().setRange(sheets.getFullLabel(sheetLabel) + "!" + range).setValues(values));
                 }
                 BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
                         .setValueInputOption("RAW")
                         .setData(data);
                 BatchUpdateValuesResponse result =
-                        mService.spreadsheets().values().batchUpdate(id, body).execute();
+                        mService.spreadsheets().values().batchUpdate(id, body).execute(); //TODO: handle an error, when exists a problem with download
             }
             return true;
         }
