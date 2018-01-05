@@ -3,27 +3,22 @@ package com.team.emi_projekt;
 import android.Manifest;
 
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+
 import android.os.AsyncTask;
 import android.os.Bundle;
 
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
-import android.text.TextUtils;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,50 +39,32 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
+import com.team.emi_projekt.misc.Item;
+import com.team.emi_projekt.misc.Sheets;
+import com.team.emi_projekt.misc.SheetsReader;
+import com.team.emi_projekt.screen.MainScreen;
 
-import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
-
-import edu.cmu.pocketsphinx.Assets;
-import edu.cmu.pocketsphinx.Hypothesis;
-import edu.cmu.pocketsphinx.RecognitionListener;
-import edu.cmu.pocketsphinx.SpeechRecognizer;
-import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
+import java.util.Set;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-import static android.widget.Toast.makeText;
-
-public class MainActivity extends AppCompatActivity implements RecognitionListener, EasyPermissions.PermissionCallbacks {
-
-    /* Named searches allow to quickly reconfigure the decoder */
-    private static final String KWS_SEARCH = "wakeup";
-    /* Keyword to activate listener */
-    private static final String KEYPHRASE = String.valueOf(R.string.keyphrase);
-    /* Words */
-    private static final String MENU_SEARCH = String.valueOf(R.string.menu_search);
-    private static final String NEW_CARD_SEARCH = String.valueOf(R.string.new_card_search);
-    private static final String NEW_LIST_SEARCH = String.valueOf(R.string.new_list_search);
-    private static final String ACTUAL_LIST_SEARCH = String.valueOf(R.string.actual_list_search);
-    /* Used to handle permission request */
-    private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
-
-    private SpeechRecognizer recognizer;
-    private HashMap<String, Integer> captions;
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
     GoogleAccountCredential mCredential;
     ProgressDialog mProgress;
 
     private TextView mOutputText;
     private Button mCallApiButton;
+    private Sheets sheets;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -95,16 +72,14 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
 
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS_READONLY};
-
-    int rand;
-    Random randomize;
-
+    private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
+    //TODO: overwrite onResult
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        sheets = new Sheets();
 
         mOutputText = (TextView) findViewById(R.id.loginText);
         mCallApiButton = (Button) findViewById(R.id.login);
@@ -127,41 +102,8 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-        randomize = new Random();
-        rand = randomize.nextInt(11);
-
-        /* Set answers for each sentence */
-        captions = new HashMap<>();
-        captions.put(KWS_SEARCH, R.string.kws_caption);
-        captions.put(MENU_SEARCH, R.string.menu_caption);
-        captions.put(NEW_CARD_SEARCH, R.string.new_card_caption);
-        captions.put(NEW_LIST_SEARCH, R.string.new_list_caption);
-        captions.put(ACTUAL_LIST_SEARCH, R.string.actual_list_caption);
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                recognizer.startListening(KWS_SEARCH);
-                /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();*/
-            }
-        });
-
-        ((TextView) findViewById(R.id.caption_text)).setText("Preparing the recognizer");
-
-        /* Check if user has given permission to record audio */
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-            return;
-        }
-
-        /* Setup voice recognition */
-        runRecognizerSetup();
     }
 
     private void getResultsFromApi() {
@@ -171,11 +113,25 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
             chooseAccount();
         } else if (!isDeviceOnline()) {
             //TODO: change to the dialog window, where u must to turn on the internet or close the app
-            mOutputText.setText("No network connection available.");
+            mOutputText.setText("No network connection available. Please get an internet connection");
         } else {
             new MakeRequestTask(mCredential).execute();
         }
     }
+
+    private void setResults() {
+        if (!isGooglePlayServicesAvailable()) {
+            acquireGooglePlayServices();
+        } else if (mCredential.getSelectedAccountName() == null) {
+            chooseAccount();
+        } else if (!isDeviceOnline()) {
+            //TODO: change to the dialog window, where u must to turn on the internet or close the app
+            mOutputText.setText("No network connection available. Please get an internet connection");
+        } else {
+            new MakeUploadTask(mCredential).execute();
+        }
+    }
+
 
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
     private void chooseAccount() {
@@ -232,18 +188,16 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
                     getResultsFromApi();
                 }
                 break;
+            case Activity.RESULT_FIRST_USER:
+                Sheets temp = SheetsReader.loadSheets(MainActivity.this);
+                if (temp != null) {
+                    sheets = temp;
+                    setResults();
+                }
+                break;
         }
     }
 
-    @Override
-    public void onPermissionsGranted(int requestCode, List<String> list) {
-        // Do nothing. :) mb change here something?
-    }
-
-    @Override
-    public void onPermissionsDenied(int requestCode, List<String> list) {
-        // Do nothing. Same thing :/
-    }
 
     /* TODO: add here a switch for offline mode */
     private boolean isDeviceOnline() {
@@ -272,10 +226,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     void showGooglePlayServicesAvailabilityErrorDialog(final int connectionStatusCode) {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        Dialog dialog = apiAvailability.getErrorDialog(
-                MainActivity.this,
-                connectionStatusCode,
-                REQUEST_GOOGLE_PLAY_SERVICES);
+        Dialog dialog = apiAvailability.getErrorDialog(MainActivity.this, connectionStatusCode, REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
 
@@ -283,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
      * An asynchronous task that handles the Google Sheets API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+    private class MakeRequestTask extends AsyncTask<Void, Void, Boolean> {
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
 
@@ -292,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.sheets.v4.Sheets.Builder(
                     transport, jsonFactory, credential)
-                    .setApplicationName("Google Sheets API Android Quickstart")
+                    .setApplicationName("EMI_Projekt")
                     .build();
         }
 
@@ -302,13 +253,13 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
          * @param params no parameters needed for this task.
          */
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params) {
             try {
                 return getDataFromApi();
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
-                return null;
+                return false;
             }
         }
 
@@ -320,22 +271,25 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
          * @return List of names and majors
          * @throws IOException
          */
-        private List<String> getDataFromApi() throws IOException {
-            String spreadsheetId = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
-            /* range is A1 notation {%SheetName(in the bottom of the spreadsheet)(first visible if nothing wrote)% ! %from% : %until%} */
-            String range = "A1:B2";
-            List<String> results = new ArrayList<>();
+        private Boolean getDataFromApi() throws IOException {
+
+            String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
+            String sheet = "MyList";
+            sheets.addSheet(sheet);
+            String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
+            //TODO: call this inside of another class
             ValueRange response = this.mService.spreadsheets().values()
-                    .get(spreadsheetId, range)
+                    .get(id, sheet + "!" + range)
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
-                results.add("First, Second");
+                //TODO: Probably move this method to the Sheets
                 for (List row : values) {
-                    results.add(row.get(0) + ", " + row.get(1));
+                    Item tempItem = new Item(row, sheet);
+                    sheets.addItem(sheet, tempItem);
                 }
             }
-            return results;
+            return true;
         }
 
         @Override
@@ -345,13 +299,14 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
+        protected void onPostExecute(Boolean output) {
             mProgress.hide();
-            if (output == null || output.size() == 0) {
+            if (!output) {
                 mOutputText.setText("No results returned.");
             } else {
-                output.add(0, "Data retrieved using the Google Sheets API:");
-                mOutputText.setText(TextUtils.join("\n", output));
+                Intent intent = new Intent(MainActivity.this, MainScreen.class);
+                SheetsReader.storeSheets(MainActivity.this, sheets);
+                startActivityForResult(intent, Activity.RESULT_FIRST_USER);
             }
         }
 
@@ -377,6 +332,105 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
         }
     }
 
+    private class MakeUploadTask extends AsyncTask<Void, Void, Boolean> {
+
+        private com.google.api.services.sheets.v4.Sheets mService = null;
+        private Exception mLastError = null;
+
+        MakeUploadTask(GoogleAccountCredential credential) {
+            HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                    transport, jsonFactory, credential)
+                    .setApplicationName("EMI_Projekt")
+                    .build();
+        }
+
+        /**
+         * Background task to call Google Sheets API.
+         *
+         * @param params no parameters needed for this task.
+         */
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                return getDataFromApi();
+            } catch (Exception e) {
+                mLastError = e;
+                cancel(true);
+                return false;
+            }
+        }
+
+        /**
+         * TODO: set spreadsheet generator
+         * EMI test spreadsheet
+         * https://docs.google.com/spreadsheets/d/1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug/edit?usp=sharing
+         *
+         * @return List of names and majors
+         * @throws IOException
+         */
+        private Boolean getDataFromApi() throws IOException {
+
+            String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
+            String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
+            Set<String> sheetLabels = sheets.getLabels();
+            List<ValueRange> data = new ArrayList<ValueRange>();
+            if (sheets.getLabels() != null) {
+                for (String sheetLabel : sheetLabels) {
+                    List<List<Object>> values = sheets.getItemsData(sheetLabel);
+                    data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
+                }
+                BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
+                        .setValueInputOption("RAW")
+                        .setData(data);
+                BatchUpdateValuesResponse result =
+                        mService.spreadsheets().values().batchUpdate(id, body).execute();
+            }
+            return true;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgress.show();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean output) {
+            mProgress.hide();
+            if (!output) {
+                Toast.makeText(MainActivity.this, "No results Uploaded.", Toast.LENGTH_LONG).show();
+            } else {
+                Intent intent = new Intent(MainActivity.this, MainScreen.class);
+                SheetsReader.storeSheets(MainActivity.this, sheets);
+                Toast.makeText(MainActivity.this, "Succeed sync", Toast.LENGTH_LONG).show();
+                startActivityForResult(intent, Activity.RESULT_FIRST_USER);
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            if (mLastError != null) {
+                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                    showGooglePlayServicesAvailabilityErrorDialog(
+                            ((GooglePlayServicesAvailabilityIOException) mLastError)
+                                    .getConnectionStatusCode());
+                } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                    startActivityForResult(
+                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                            MainActivity.REQUEST_AUTHORIZATION);
+                } else {
+                    mProgress.setMessage("The following error occurred:\n"
+                            + mLastError.getMessage());
+                    Toast.makeText(MainActivity.this, "The following error occurred:\n"
+                            + mLastError.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "Sync was cancelled", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         /* Inflate the menu; this adds items to the action bar if it is present. */
@@ -396,148 +450,13 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     }
 
-    /* Check permissions */
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        EasyPermissions.onRequestPermissionsResult(
-                requestCode, permissions, grantResults, this);
-
-        if (requestCode == PERMISSIONS_REQUEST_RECORD_AUDIO) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                runRecognizerSetup();
-            } else {
-                finish();
-            }
-        }
-    }
-
-    private void runRecognizerSetup() {
-        /* Recognizer initialization is a time-consuming and it involves IO,
-         so we execute it in async task */
-        new AsyncTask<Void, Void, Exception>() {
-            @Override
-            protected Exception doInBackground(Void... params) {
-                try {
-                    Assets assets = new Assets(MainActivity.this);
-                    File assetDir = assets.syncAssets();
-                    setupRecognizer(assetDir);
-                } catch (IOException e) {
-                    return e;
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Exception result) {
-                if (result != null) {
-                    ((TextView) findViewById(R.id.caption_text)).setText("Failed to init recognizer " + result);
-                } else {
-                    switchSearch(KWS_SEARCH);
-                }
-            }
-        }.execute();
-    }
-
-    /* To change searching string */
-    private void switchSearch(String searchName) {
-        recognizer.stop();
-
-        /* If we are not spotting, start listening with timeout (10000 ms or 10 seconds). */
-        if (searchName.equals(KWS_SEARCH))
-            recognizer.startListening(searchName);
-        else
-            recognizer.startListening(searchName, 10000);
-
-        /* Set answer phrase */
-        String caption = getResources().getString(captions.get(searchName));
-        ((TextView) findViewById(R.id.caption_text)).setText(caption);
-    }
-
-    private void setupRecognizer(File assetsDir) throws IOException {
-        /* The recognizer can be configured to perform multiple searches
-            of different kind and switch between them */
-
-        recognizer = SpeechRecognizerSetup.defaultSetup()
-                .setAcousticModel(new File(assetsDir, "german"))
-                .setDictionary(new File(assetsDir, "german.dic"))
-                /* To disable logging of raw audio comment out this call (takes a lot of space on the device) */
-                //.setRawLogDir(assetsDir)
-                .getRecognizer();
-        recognizer.addListener(this);
-
-        /* Create keyword-activation search. */
-        recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
-
-        /* Usage example (set the instruction file) */
-        File menuGrammar = new File(assetsDir, "menu.gram");
-        recognizer.addGrammarSearch(MENU_SEARCH, menuGrammar);
-
-        File languageModel = new File(assetsDir, "cmusphinx-voxforge-de.lm.bin");
-        recognizer.addNgramSearch(NEW_CARD_SEARCH, languageModel);
+    public void onPermissionsGranted(int requestCode, List<String> list) {
+        // Do nothing. :) mb change here something?
     }
 
     @Override
-    public void onBeginningOfSpeech() {
-
-    }
-
-    @Override
-    public void onEndOfSpeech() {
-        if (!recognizer.getSearchName().equals(KWS_SEARCH))
-            switchSearch(KWS_SEARCH);
-    }
-
-    @Override
-    public void onPartialResult(Hypothesis hypothesis) {
-    /* If hear some words */
-        if (hypothesis == null)
-            return;
-
-        String text = hypothesis.getHypstr();
-
-        /* Wait for the command after hearing the keyword */
-        if (text.equals(KEYPHRASE))
-            switchSearch(MENU_SEARCH);
-        else if (text.equals(NEW_CARD_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), NEW_CARD_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else if (text.equals(NEW_LIST_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), NEW_LIST_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else if (text.equals(ACTUAL_LIST_SEARCH)) {
-            recognizer.stop();
-            makeText(getApplicationContext(), ACTUAL_LIST_SEARCH, Toast.LENGTH_SHORT).show();
-        }
-        else
-            makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onResult(Hypothesis hypothesis) {
-        ((TextView) findViewById(R.id.caption_text)).setText("");
-        if (hypothesis != null) {
-            String text = hypothesis.getHypstr();
-            makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onError(Exception e) {
-        ((TextView) findViewById(R.id.caption_text)).setText(e.getMessage());
-    }
-
-    @Override
-    public void onTimeout() {
-        switchSearch(KWS_SEARCH);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        recognizer.cancel();
-        recognizer.shutdown();
+    public void onPermissionsDenied(int requestCode, List<String> list) {
+        // Do nothing. Same thing :/
     }
 }
