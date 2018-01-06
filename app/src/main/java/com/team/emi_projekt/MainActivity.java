@@ -39,8 +39,14 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.AddSheetRequest;
+import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.NamedRange;
+import com.google.api.services.sheets.v4.model.Request;
+import com.google.api.services.sheets.v4.model.SheetProperties;
+import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.team.emi_projekt.misc.Item;
 import com.team.emi_projekt.misc.Sheets;
@@ -52,7 +58,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -115,7 +121,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             //TODO: change to the dialog window, where u must to turn on the internet or close the app
             mOutputText.setText("No network connection available. Please get an internet connection");
         } else {
-            sheets.setPrivateKey(mCredential.getSelectedAccountName());
+            if (Objects.equals(sheets.getPrivateKey(), "")) {
+                sheets.setPrivateKey(mCredential.getSelectedAccountName());
+                new NewDeviceRequest(mCredential).execute(); //Checks, if this private sheet exists in database, otherwise creates a new one
+            }
             new MakeRequestTask(mCredential).execute();
         }
     }
@@ -231,6 +240,102 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         dialog.show();
     }
 
+    private class NewDeviceRequest extends AsyncTask<Void, Void, Boolean> {
+        private com.google.api.services.sheets.v4.Sheets mService = null;
+        private Exception mLastError = null;
+
+        NewDeviceRequest(GoogleAccountCredential credential) {
+            HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                    transport, jsonFactory, credential)
+                    .setApplicationName("EMI_Projekt")
+                    .build();
+        }
+
+        /**
+         * Background task to call Google Sheets API.
+         *
+         * @param params no parameters needed for this task.
+         */
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                return getDataFromApi();
+            } catch (Exception e) {
+                mLastError = e;
+                cancel(true);
+                return false;
+            }
+        }
+
+        private Boolean getDataFromApi() throws IOException {
+
+            String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
+            String privateSheetLabel = "MyList|" + sheets.getPrivateKey();
+            Boolean userExists = false;
+
+                Spreadsheet response = this.mService.spreadsheets().get(id).execute();
+                List<NamedRange> sheets = response.getNamedRanges();
+                if (sheets != null)
+                    for (NamedRange temp : sheets)
+                        if (Objects.equals(temp.getName(), privateSheetLabel))
+                            userExists = true;
+
+                if (!userExists) {
+                    List<Request> requests = new ArrayList<Request>();
+                    requests.add(new Request()
+                            .setAddSheet(new AddSheetRequest()
+                            .setProperties(new SheetProperties()
+                            .setTitle(privateSheetLabel))));
+
+                    BatchUpdateSpreadsheetRequest body =
+                        new BatchUpdateSpreadsheetRequest().setRequests(requests);
+
+                    mService.spreadsheets().batchUpdate(id, body).execute();
+                }
+            return true;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgress.setMessage("Searching for the account");
+            mProgress.show();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean output) {
+            mProgress.hide();
+            if (output == null) {
+                Toast.makeText(MainActivity.this, "Searching account error", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Account is found or created", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            if (mLastError != null) {
+                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                    showGooglePlayServicesAvailabilityErrorDialog(
+                            ((GooglePlayServicesAvailabilityIOException) mLastError)
+                                    .getConnectionStatusCode());
+                } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                    startActivityForResult(
+                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                            MainActivity.REQUEST_AUTHORIZATION);
+                } else {
+                    mProgress.setMessage("The following error occurred:\n"
+                            + mLastError.getMessage());
+                    Toast.makeText(MainActivity.this, "The following error occurred:\n"
+                            + mLastError.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "Account search was cancelled", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     /**
      * An asynchronous task that handles the Google Sheets API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
@@ -276,7 +381,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
-            for (String sheet : sheets.getFullLabels()) { //TODO: handle, if its == null
+
+            for (String sheet : sheets.getFullLabels()) {
                 ValueRange response = this.mService.spreadsheets().values()
                         .get(id, sheet + "!" + range)
                         .execute();
@@ -332,7 +438,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
-    private class MakeUploadTask extends AsyncTask<Void, Void, Boolean> {
+    private class MakeUploadTask extends AsyncTask<Void, Void, Integer> {
 
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
@@ -352,13 +458,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @param params no parameters needed for this task.
          */
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Integer doInBackground(Void... params) {
             try {
                 return getDataFromApi();
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
-                return false;
+                return null;
             }
         }
 
@@ -370,8 +476,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
          * @return List of names and majors
          * @throws IOException
          */
-        private Boolean getDataFromApi() throws IOException {
-
+        private Integer getDataFromApi() throws IOException {
+            Integer updatedCount = 0;
             String id = "1rtX9L-pbCQ4w8NTq96Nh3TBGZ5--8o8E5tIKMjnU0Ug";
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
             List<ValueRange> data = new ArrayList<ValueRange>();
@@ -384,9 +490,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         .setValueInputOption("RAW")
                         .setData(data);
                 BatchUpdateValuesResponse result =
-                        mService.spreadsheets().values().batchUpdate(id, body).execute(); //TODO: handle an error, when exists a problem with download
+                        mService.spreadsheets().values().batchUpdate(id, body).execute();
+                updatedCount += result.getTotalUpdatedCells();
             }
-            return true;
+            return updatedCount;
         }
 
         @Override
@@ -395,14 +502,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         @Override
-        protected void onPostExecute(Boolean output) {
+        protected void onPostExecute(Integer output) {
             mProgress.hide();
-            if (!output) {
+            if (output == null) {
                 Toast.makeText(MainActivity.this, "No results Uploaded.", Toast.LENGTH_LONG).show();
             } else {
                 Intent intent = new Intent(MainActivity.this, MainScreen.class);
                 SheetsReader.storeSheets(MainActivity.this, sheets);
-                Toast.makeText(MainActivity.this, "Succeed sync", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Succeed sync, updated " + output + " Cells", Toast.LENGTH_LONG).show();
                 startActivityForResult(intent, Activity.RESULT_FIRST_USER);
             }
         }

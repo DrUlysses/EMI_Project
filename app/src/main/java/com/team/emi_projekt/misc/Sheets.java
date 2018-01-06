@@ -81,6 +81,8 @@ public class Sheets implements Serializable {
             if (currentChar == '{') {
                 List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
                 sheetLabel = fullSheetLabel.get(0);
+                if (Objects.equals(privateKey, ""))
+                    privateKey = fullSheetLabel.get(1); //TODO: handle an error, if trying to add incorrect sheet (where the private key is invalid)
                 //TODO: handle duplicate labels, sending an error msg or smth. Use full names only on download-save-load-upload states
                 addSheet(temp);
                 temp = "";
