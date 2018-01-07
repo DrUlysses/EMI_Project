@@ -81,7 +81,7 @@ public class MainScreen extends AppCompatActivity {
                 String itemLabelText = (String) b.getSerializable("ItemLabel");
                 if (Objects.equals(item.getLabel(), "") && Objects.equals(item.getSheet(), "")) {
                     sheets.removeItem(sheetLabelText, itemLabelText, item.getComment());
-                } else if (Objects.equals(sheetLabelText, "")) { //TODO: too many checks, must reforge whole method
+                } else if (Objects.equals(sheetLabelText, "")) { //TODO: too many checks, must move to add screen with reforged checks
                     if (sheets.hasSheet(item.getSheet())) {
                         Item temp = sheets.getItem(item.getSheet(), item.getLabel());
                         if (temp != null)

@@ -33,6 +33,10 @@ public class Sheets implements Serializable {
         return current.keySet();
     }
 
+    public String getLabel(String fullLabel) {
+        return Arrays.asList(fullLabel.split("\\|")).get(0);
+    }
+
     public Set<String> getFullLabels() {
         //Yeah
         return new HashSet<>(currentKeys.values());
@@ -40,7 +44,7 @@ public class Sheets implements Serializable {
 
     public String getFullLabel(String sheetLabel) {
         if (currentKeys.containsKey(sheetLabel))
-            return sheetLabel + "\\|" + currentKeys.get(sheetLabel);
+            return currentKeys.get(sheetLabel);
         else
             return ""; //mb can return null
     }
@@ -108,6 +112,10 @@ public class Sheets implements Serializable {
     public void addSheet(String name) {
         List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(name.split("\\|")));
         String sheetLabel = fullSheetLabel.get(0);
+        if (fullSheetLabel.size() == 1) {
+            //TODO: move this check to the addOwner method
+            name += "|" + privateKey;
+        }
         if (!current.containsKey(sheetLabel)) {
             current.put(sheetLabel, new Vector<Item>());
             currentKeys.put(sheetLabel, name);
@@ -202,7 +210,7 @@ public class Sheets implements Serializable {
     }
 
     public boolean hasSheet(String sheetLabel) {
-        return current.containsKey(sheetLabel);
+        return current.containsKey(sheetLabel) || currentKeys.containsValue(sheetLabel);
     }
 
     public boolean hasItemLabel(String  sheetLabel, String itemLabel) {
