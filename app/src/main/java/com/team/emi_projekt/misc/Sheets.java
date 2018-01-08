@@ -76,6 +76,17 @@ public class Sheets implements Serializable {
         return result;
     }
 
+    public void removeSheet(String sheetLabel) {
+        current.remove(sheetLabel);
+        currentKeys.remove(sheetLabel);
+    }
+
+    public void setFullSheetLabel(String sheetLabel, String fullSheetLabel) {
+        Vector<Item> temp = current.remove(sheetLabel);
+        currentKeys.remove(sheetLabel);
+        insertSheet(fullSheetLabel, temp);
+    }
+
     public void addSheetData(String sheetAsString) {
         String temp = "";
         String sheetLabel = "";
@@ -107,6 +118,19 @@ public class Sheets implements Serializable {
         for (String temp: current.keySet())
             list.add(new SheetPreview(temp, getLabels(temp), getComments(temp)));
         return list;
+    }
+
+    private void insertSheet(String fullLabel, Vector<Item> items) {
+        List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(fullLabel.split("\\|")));
+        String sheetLabel = fullSheetLabel.get(0);
+        if (fullSheetLabel.size() == 1) {
+            //TODO: move this check to the addOwner method
+            fullLabel += "|" + privateKey;
+        }
+        if (!current.containsKey(sheetLabel)) {
+            current.put(sheetLabel, items);
+            currentKeys.put(sheetLabel, fullLabel);
+        }
     }
 
     public void addSheet(String name) {

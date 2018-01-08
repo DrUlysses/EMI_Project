@@ -3,6 +3,7 @@ package com.team.emi_projekt.adapter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -29,14 +30,14 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     private List<SheetPreview> sheetPreviews;
     private Sheets sheets;
 
-    public void changeItemPreview(String sheetLabel, String currentItemLabel, String newItemLabel, String newItemComment) {
-        //Sorry for this, looks bad
-        for (SheetPreview sheetPreview: sheetPreviews)
-            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase())) {
-                sheetPreview.setItemNameAndComment(currentItemLabel, newItemLabel, newItemComment);
-                return;
-            }
-    }
+//    public void changeItemPreview(String sheetLabel, String currentItemLabel, String newItemLabel, String newItemComment) {
+//        //Sorry for this, looks bad
+//        for (SheetPreview sheetPreview: sheetPreviews)
+//            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase())) {
+//                sheetPreview.setItemNameAndComment(currentItemLabel, newItemLabel, newItemComment);
+//                return;
+//            }
+//    }
 
     public void setPreviews(List<SheetPreview> sheetPreviews) {
         this.sheetPreviews = sheetPreviews;
@@ -85,22 +86,42 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
 
     @Override
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-        String headerTitle = (String)getGroup(groupPosition);
+        final String sheetLabelText = (String) getGroup(groupPosition);
+
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater)this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.main_screen_list,null);
         }
         TextView sheetLabel = (TextView)convertView.findViewById(R.id.sheetLabel);
         sheetLabel.setTypeface(null, Typeface.BOLD);
-        sheetLabel.setText(headerTitle);
+        sheetLabel.setText(sheetLabelText);
+
         ExpandableListView mExpandableListView = (ExpandableListView) parent;
         mExpandableListView.expandGroup(groupPosition);
+
+        sheetLabel.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Intent intent = new Intent(context, AddScreen.class);
+                Bundle bundle = new Bundle();
+                String fullSheetLabel = sheets.getFullLabel(sheetLabelText);
+                bundle.putSerializable("SheetLabel", sheetLabelText);
+                bundle.putSerializable("FullSheetLabel", fullSheetLabel);
+                intent.putExtras(bundle);
+                if (context instanceof AppCompatActivity)
+                    ((Activity) context).startActivityForResult(intent, 1);
+                else
+                    Log.e("err", "context must be an instanceof Activity");
+                return false;
+            }
+        });
+
         return convertView;
     }
 
     @Override
     public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        SheetPreview temp = (SheetPreview)getChild(groupPosition, childPosition);
+        SheetPreview temp = (SheetPreview) getChild(groupPosition, childPosition);
         final String itemLabelText = temp.getItemNames().get(childPosition);
         final String itemCommentText = temp.getItemComments().get(childPosition);
         final String sheetLabelText = temp.getSheetName();
@@ -111,19 +132,17 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
             convertView = inflater.inflate(R.layout.main_screen_item,null);
         }
 
-        LinearLayout itemView = (LinearLayout) convertView.findViewById(R.id.itemView);
+        final LinearLayout itemView = (LinearLayout) convertView.findViewById(R.id.itemView);
         TextView itemLabel = (TextView)convertView.findViewById(R.id.itemLabel);
         TextView itemComment = (TextView)convertView.findViewById(R.id.itemComment);
         itemLabel.setText(itemLabelText);
         itemComment.setText(itemCommentText);
 
-        //TODO: start to use some database instead of this crap
-        itemView.setOnClickListener(new View.OnClickListener() {
+        itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public void onClick(View v) {
+            public boolean onLongClick(View v) {
                 Intent intent = new Intent(context, AddScreen.class);
                 Bundle bundle = new Bundle();
-                //This is bad. Really bad
                 Item item = sheets.getItem(sheetLabelText, itemLabelText);
                 bundle.putSerializable("SheetLabel", sheetLabelText);
                 bundle.putSerializable("ItemLabel", itemLabelText);
@@ -132,7 +151,15 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
                 if (context instanceof AppCompatActivity)
                     ((Activity) context).startActivityForResult(intent, 1);
                 else
-                    Log.e("err","context must be an instanceof Activity");
+                    Log.e("err", "context must be an instanceof Activity");
+                return false;
+            }
+        });
+
+        itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                itemView.setBackgroundColor(Color.GREEN);
             }
         });
 

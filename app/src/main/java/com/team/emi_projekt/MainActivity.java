@@ -43,6 +43,7 @@ import com.google.api.services.sheets.v4.model.AddSheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.DeleteSheetRequest;
 import com.google.api.services.sheets.v4.model.GridRange;
 import com.google.api.services.sheets.v4.model.NamedRange;
 import com.google.api.services.sheets.v4.model.Request;
@@ -60,8 +61,10 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -306,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 sheets.addSheet(privateSheetLabel);
                 sheets.addItem("MyList", new Item("Sugar", "One bag", privateSheetLabel));
             }
-            //TODO: realise this class shorter
+
             for (String sheet : sheets.getFullLabels()) {
                 ValueRange response = this.mService.spreadsheets().values()
                         .get(id, sheet + "!" + range)
@@ -408,31 +411,53 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             List<Sheet> cloudSheets = this.mService.spreadsheets().get(id).execute().getSheets();
 
-            //TODO: find the another way for this in API
-            List<String> cloudSheetsTitles = new ArrayList<>();
-            for (Sheet tempCloudSheet : cloudSheets)
-                cloudSheetsTitles.add(tempCloudSheet.getProperties().getTitle());
+            HashMap<String, Integer> cloudSheetsTitles = new HashMap<>();
+            String tempCloudSheetTitle;
+            Integer tempCloudSheetId;
+            for (Sheet tempCloudSheet : cloudSheets) {
+                tempCloudSheetTitle = tempCloudSheet.getProperties().getTitle();
+                tempCloudSheetId = tempCloudSheet.getProperties().getSheetId();
+                if (tempCloudSheetTitle.contains(sheets.getPrivateKey()))
+                    cloudSheetsTitles.put(tempCloudSheetTitle, tempCloudSheetId);
+            }
 
-
-            List<ValueRange> data = new ArrayList<ValueRange>();
+            //Delete sheets
             if (sheets.getLabels() != null) {
+                Set<String> sheetLabels = sheets.getFullLabels();
+                for (String cloudSheetLabel : cloudSheetsTitles.keySet()) {
+                    if (!sheetLabels.contains(cloudSheetLabel)) {
+                        List<Request> requests = new ArrayList<Request>();
+                        requests.add(new Request()
+                                .setDeleteSheet(new DeleteSheetRequest()
+                                        .setSheetId(cloudSheetsTitles.get(cloudSheetLabel))));
+
+                        BatchUpdateSpreadsheetRequest body =
+                                new BatchUpdateSpreadsheetRequest().setRequests(requests);
+                        mService.spreadsheets().batchUpdate(id, body).execute();
+                    }
+                }
+            }
+
+            //Edit/add sheets and values
+            if (sheets.getLabels() != null) {
+                List<ValueRange> data = new ArrayList<ValueRange>();
                 for (String sheetLabel : sheets.getFullLabels()) {
-                    if (!cloudSheetsTitles.contains(sheetLabel)) {
+                    if (!cloudSheetsTitles.containsKey(sheetLabel)) {
                         List<Request> requests = new ArrayList<Request>();
                         requests.add(new Request()
                                 .setAddSheet(new AddSheetRequest()
                                         .setProperties(new SheetProperties()
                                                 .setTitle(sheetLabel))));
 
-                        BatchUpdateSpreadsheetRequest body =
+                        BatchUpdateSpreadsheetRequest spreadsheetRequestBody =
                                 new BatchUpdateSpreadsheetRequest().setRequests(requests);
-
-                        mService.spreadsheets().batchUpdate(id, body).execute();
+                        mService.spreadsheets().batchUpdate(id, spreadsheetRequestBody).execute();
                     }
                     List<List<Object>> values = sheets.getItemsData(sheets.getLabel(sheetLabel));
                     data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
                     updatedCount++;
                 }
+
                 BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
                         .setValueInputOption("RAW")
                         .setData(data);
