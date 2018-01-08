@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,13 +12,41 @@ import java.util.Vector;
 
 public class Sheets implements Serializable {
     private HashMap<String, Vector<Item>> current;
+    private HashMap<String, String> currentKeys; //Key == labels for display, Value == formatted String label|userName|groupMemberName
+    private String privateKey;
 
     public Sheets() {
         current = new HashMap<>();
+        currentKeys = new HashMap<>();
+        privateKey = "";
+    }
+
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
+    }
+
+    public String getPrivateKey() {
+        return privateKey;
     }
 
     public Set<String> getLabels() {
         return current.keySet();
+    }
+
+    public String getLabel(String fullLabel) {
+        return Arrays.asList(fullLabel.split("\\|")).get(0);
+    }
+
+    public Set<String> getFullLabels() {
+        //Yeah
+        return new HashSet<>(currentKeys.values());
+    }
+
+    public String getFullLabel(String sheetLabel) {
+        if (currentKeys.containsKey(sheetLabel))
+            return currentKeys.get(sheetLabel);
+        else
+            return ""; //mb can return null
     }
 
     public List<List<Object>> getItemsData(String sheetLabel) {
@@ -42,9 +71,20 @@ public class Sheets implements Serializable {
         String result = "";
 
         for (String sheetLabel : current.keySet())
-            result += sheetLabel + "{" + getSheetData(sheetLabel) + "}";
+            result += getFullLabel(sheetLabel) + "{" + getSheetData(sheetLabel) + "}";
 
         return result;
+    }
+
+    public void removeSheet(String sheetLabel) {
+        current.remove(sheetLabel);
+        currentKeys.remove(sheetLabel);
+    }
+
+    public void setFullSheetLabel(String sheetLabel, String fullSheetLabel) {
+        Vector<Item> temp = current.remove(sheetLabel);
+        currentKeys.remove(sheetLabel);
+        insertSheet(fullSheetLabel, temp);
     }
 
     public void addSheetData(String sheetAsString) {
@@ -52,20 +92,24 @@ public class Sheets implements Serializable {
         String sheetLabel = "";
         Item tempItem;
 
-        for (char current : sheetAsString.toCharArray()) {
-            if (current == '{') {
-                sheetLabel = temp;
-                addSheet(sheetLabel);
+        for (char currentChar : sheetAsString.toCharArray()) {
+            if (currentChar == '{') {
+                List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
+                sheetLabel = fullSheetLabel.get(0);
+                if (Objects.equals(privateKey, ""))
+                    privateKey = fullSheetLabel.get(1); //TODO: handle an error, if trying to add incorrect sheet (where the private key is invalid)
+                //TODO: handle duplicate labels, sending an error msg or smth. Use full names only on download-save-load-upload states
+                addSheet(temp);
                 temp = "";
             }
-            else if (current == '\n') {
+            else if (currentChar == '\n') {
                 List<String> itemData = new ArrayList<String>(Arrays.asList(temp.split("\\|")));
                 tempItem = new Item(itemData, sheetLabel);
                 addItem(sheetLabel, tempItem);
                 temp = "";
             }
             else
-                temp += current;
+                temp += currentChar;
         }
     }
 
@@ -76,9 +120,30 @@ public class Sheets implements Serializable {
         return list;
     }
 
+    private void insertSheet(String fullLabel, Vector<Item> items) {
+        List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(fullLabel.split("\\|")));
+        String sheetLabel = fullSheetLabel.get(0);
+        if (fullSheetLabel.size() == 1) {
+            //TODO: move this check to the addOwner method
+            fullLabel += "|" + privateKey;
+        }
+        if (!current.containsKey(sheetLabel)) {
+            current.put(sheetLabel, items);
+            currentKeys.put(sheetLabel, fullLabel);
+        }
+    }
+
     public void addSheet(String name) {
-        if (!current.containsKey(name))
-            current.put(name, new Vector<Item>());
+        List<String> fullSheetLabel = new ArrayList<String>(Arrays.asList(name.split("\\|")));
+        String sheetLabel = fullSheetLabel.get(0);
+        if (fullSheetLabel.size() == 1) {
+            //TODO: move this check to the addOwner method
+            name += "|" + privateKey;
+        }
+        if (!current.containsKey(sheetLabel)) {
+            current.put(sheetLabel, new Vector<Item>());
+            currentKeys.put(sheetLabel, name);
+        }
     }
 
     private List<String> getLabels(String sheetName) {
@@ -169,7 +234,7 @@ public class Sheets implements Serializable {
     }
 
     public boolean hasSheet(String sheetLabel) {
-        return current.containsKey(sheetLabel);
+        return current.containsKey(sheetLabel) || currentKeys.containsValue(sheetLabel);
     }
 
     public boolean hasItemLabel(String  sheetLabel, String itemLabel) {
