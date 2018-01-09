@@ -1,6 +1,7 @@
 package com.team.emi_projekt.screen;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -76,6 +77,21 @@ public class AddScreen extends AppCompatActivity {
         deleteItem = (Button) findViewById(R.id.deleteEditedItem);
 
         if (fullSheetLabelText == null) {
+            Button shareButton = (Button) findViewById(R.id.shareButton);
+            shareButton.setVisibility(View.VISIBLE);
+            shareButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent newIntent = new Intent(Intent.ACTION_SEND);
+                    newIntent.setType("text/plain");
+                    String shareBody = "Can you please buy " + editItemLabel.getText().toString() + " (" + editItemComment.getText().toString() + ") ?";
+                    String shareSub = "ToBuy";
+                    newIntent.putExtra(Intent.EXTRA_SUBJECT, shareSub);
+                    newIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+                    startActivity(Intent.createChooser(newIntent, "Share using"));
+                }
+            });
+
             editItemLabel = (EditText) findViewById(R.id.editItemLabel);
             editItemLabel.setVisibility(View.VISIBLE);
             editItemComment = (EditText) findViewById(R.id.editItemComment);
