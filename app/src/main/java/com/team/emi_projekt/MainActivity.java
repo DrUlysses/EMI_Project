@@ -308,17 +308,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 String privateSheetLabel = "MyList|" + sheets.getPrivateKey();
                 sheets.addSheet(privateSheetLabel);
                 sheets.addItem("MyList", new Item("Sugar", "One bag", privateSheetLabel));
-            }
+            } else {
 
-            for (String sheet : sheets.getFullLabels()) {
-                ValueRange response = this.mService.spreadsheets().values()
-                        .get(id, sheet + "!" + range)
-                        .execute();
-                List<List<Object>> values = response.getValues();
-                if (values != null) {
-                    for (List row : values) {
-                        Item tempItem = new Item(row, sheet);
-                        sheets.addItem(sheets.getLabel(sheet), tempItem);
+                for (String sheet : sheets.getFullLabels()) {
+                    ValueRange response = this.mService.spreadsheets().values()
+                            .get(id, sheet + "!" + range)
+                            .execute();
+                    List<List<Object>> values = response.getValues();
+                    if (values != null) {
+                        for (List row : values) {
+                            Item tempItem = new Item(row, sheet);
+                            sheets.addItem(sheets.getLabel(sheet), tempItem);
+                        }
                     }
                 }
             }
