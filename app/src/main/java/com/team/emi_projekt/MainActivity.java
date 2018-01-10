@@ -16,6 +16,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import android.support.annotation.Dimension;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -43,7 +44,10 @@ import com.google.api.services.sheets.v4.model.AddSheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.ClearValuesRequest;
+import com.google.api.services.sheets.v4.model.DeleteDimensionRequest;
 import com.google.api.services.sheets.v4.model.DeleteSheetRequest;
+import com.google.api.services.sheets.v4.model.DimensionRange;
 import com.google.api.services.sheets.v4.model.GridRange;
 import com.google.api.services.sheets.v4.model.NamedRange;
 import com.google.api.services.sheets.v4.model.Request;
@@ -309,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 sheets.addSheet(privateSheetLabel);
                 sheets.addItem("MyList", new Item("Sugar", "One bag", privateSheetLabel));
             } else {
-
+                sheets.removeAllItems();
                 for (String sheet : sheets.getFullLabels()) {
                     ValueRange response = this.mService.spreadsheets().values()
                             .get(id, sheet + "!" + range)
@@ -411,15 +415,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             String range = "A:K"; /* range is A1 notation {%SheetName(first visible if nothing wrote)% ! %from% : %until%} */
 
             List<Sheet> cloudSheets = this.mService.spreadsheets().get(id).execute().getSheets();
-
             HashMap<String, Integer> cloudSheetsTitles = new HashMap<>();
             String tempCloudSheetTitle;
             Integer tempCloudSheetId;
             for (Sheet tempCloudSheet : cloudSheets) {
                 tempCloudSheetTitle = tempCloudSheet.getProperties().getTitle();
                 tempCloudSheetId = tempCloudSheet.getProperties().getSheetId();
-                if (tempCloudSheetTitle.contains(sheets.getPrivateKey()))
+                if (tempCloudSheetTitle.contains(sheets.getPrivateKey())) {
                     cloudSheetsTitles.put(tempCloudSheetTitle, tempCloudSheetId);
+                    mService.spreadsheets().values().clear(id, tempCloudSheetTitle + "!" + range, new ClearValuesRequest()).execute();
+                }
             }
 
             //Delete sheets
@@ -431,6 +436,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         requests.add(new Request()
                                 .setDeleteSheet(new DeleteSheetRequest()
                                         .setSheetId(cloudSheetsTitles.get(cloudSheetLabel))));
+
 
                         BatchUpdateSpreadsheetRequest body =
                                 new BatchUpdateSpreadsheetRequest().setRequests(requests);
@@ -449,13 +455,22 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                                 .setAddSheet(new AddSheetRequest()
                                         .setProperties(new SheetProperties()
                                                 .setTitle(sheetLabel))));
-
                         BatchUpdateSpreadsheetRequest spreadsheetRequestBody =
                                 new BatchUpdateSpreadsheetRequest().setRequests(requests);
                         mService.spreadsheets().batchUpdate(id, spreadsheetRequestBody).execute();
                     }
+
                     List<List<Object>> values = sheets.getItemsData(sheets.getLabel(sheetLabel));
                     data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
+
+                    /*requests.add(new Request()
+                            .setDeleteDimension(new DeleteDimensionRequest()
+                                    .setRange(new DimensionRange()
+                                            .setSheetId(cloudSheetsTitles.get(sheetLabel))
+                                            .setDimension("ROWS").setStartIndex(values.size()))));
+*/
+
+
                     updatedCount++;
                 }
 

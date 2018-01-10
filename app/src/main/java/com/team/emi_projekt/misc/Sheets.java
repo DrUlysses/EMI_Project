@@ -226,6 +226,13 @@ public class Sheets implements Serializable {
         }
     }
 
+    public void removeAllItems() {
+        for (String tempLabel : current.keySet()) {
+            current.remove(tempLabel);
+            current.put(tempLabel, new Vector<Item>());
+        }
+    }
+
     public void moveItem(Item item, String prevSheet) {
         if (current.containsKey(prevSheet))
             removeItem(prevSheet, item.getLabel());
