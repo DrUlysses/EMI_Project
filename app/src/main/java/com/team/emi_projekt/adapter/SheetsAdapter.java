@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -12,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -20,8 +23,10 @@ import com.team.emi_projekt.R;
 import com.team.emi_projekt.misc.Item;
 import com.team.emi_projekt.misc.SheetPreview;
 import com.team.emi_projekt.misc.Sheets;
+import com.team.emi_projekt.misc.SheetsReader;
 import com.team.emi_projekt.screen.AddScreen;
 
+import java.util.Date;
 import java.util.List;
 
 public class SheetsAdapter extends BaseExpandableListAdapter {
@@ -29,15 +34,6 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     private Context context;
     private List<SheetPreview> sheetPreviews;
     private Sheets sheets;
-
-//    public void changeItemPreview(String sheetLabel, String currentItemLabel, String newItemLabel, String newItemComment) {
-//        //Sorry for this, looks bad
-//        for (SheetPreview sheetPreview: sheetPreviews)
-//            if (sheetPreview.getSheetName().toLowerCase().contains(sheetLabel.toLowerCase())) {
-//                sheetPreview.setItemNameAndComment(currentItemLabel, newItemLabel, newItemComment);
-//                return;
-//            }
-//    }
 
     public void setPreviews(List<SheetPreview> sheetPreviews) {
         this.sheetPreviews = sheetPreviews;
@@ -88,6 +84,7 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
         final String sheetLabelText = (String) getGroup(groupPosition);
 
+
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater)this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.main_screen_list,null);
@@ -116,6 +113,22 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
             }
         });
 
+        sheetLabel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(context, AddScreen.class);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("SheetLabel", sheetLabelText);
+                bundle.putSerializable("ItemLabel", "");
+                bundle.putSerializable("Item", new Item());
+                intent.putExtras(bundle);
+                if (context instanceof AppCompatActivity)
+                    ((Activity) context).startActivityForResult(intent, 1);
+                else
+                    Log.e("err", "context must be an instanceof Activity");
+            }
+        });
+
         return convertView;
     }
 
@@ -126,15 +139,15 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
         final String itemCommentText = temp.getItemComments().get(childPosition);
         final String sheetLabelText = temp.getSheetName();
 
+        LayoutInflater inflater = (LayoutInflater)this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
         if(convertView == null)
-        {
-            LayoutInflater inflater = (LayoutInflater)this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.main_screen_item,null);
-        }
 
         final LinearLayout itemView = (LinearLayout) convertView.findViewById(R.id.itemView);
+
         TextView itemLabel = (TextView)convertView.findViewById(R.id.itemLabel);
-        TextView itemComment = (TextView)convertView.findViewById(R.id.itemComment);
+        final TextView itemComment = (TextView)convertView.findViewById(R.id.itemComment);
         itemLabel.setText(itemLabelText);
         itemComment.setText(itemCommentText);
 
@@ -159,7 +172,21 @@ public class SheetsAdapter extends BaseExpandableListAdapter {
         itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                itemView.setBackgroundColor(Color.GREEN);
+
+                int color = Color.TRANSPARENT;
+                Drawable background = itemView.getBackground();
+                if (background instanceof ColorDrawable)
+                    color = ((ColorDrawable) background).getColor();
+                if (color == Color.GREEN) {
+                    itemView.setBackgroundColor(Color.WHITE);
+                    Item temp = sheets.getItem(sheetLabelText, itemLabelText);
+                    temp.setLastBuyed(new Date());
+                }
+                else {
+                    itemView.setBackgroundColor(Color.GREEN);
+                    Item temp = sheets.getItem(sheetLabelText, itemLabelText);
+                    temp.setLastBuyed(null);
+                }
             }
         });
 

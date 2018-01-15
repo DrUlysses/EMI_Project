@@ -463,14 +463,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     List<List<Object>> values = sheets.getItemsData(sheets.getLabel(sheetLabel));
                     data.add(new ValueRange().setRange(sheetLabel + "!" + range).setValues(values));
 
-                    /*requests.add(new Request()
-                            .setDeleteDimension(new DeleteDimensionRequest()
-                                    .setRange(new DimensionRange()
-                                            .setSheetId(cloudSheetsTitles.get(sheetLabel))
-                                            .setDimension("ROWS").setStartIndex(values.size()))));
-*/
-
-
                     updatedCount++;
                 }
 

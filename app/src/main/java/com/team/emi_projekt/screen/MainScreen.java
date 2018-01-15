@@ -25,6 +25,7 @@ public class MainScreen extends AppCompatActivity {
     private ExpandableListView listView;
     private ExpandableListAdapter adapter;
     private Button syncButton;
+    private Button doneButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +33,18 @@ public class MainScreen extends AppCompatActivity {
         setContentView(R.layout.main_screen);
 
         syncButton = (Button) findViewById(R.id.syncButton);
+
+        doneButton = (Button) findViewById(R.id.doneButton);
+
+        doneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SheetsReader.storeSheets(MainScreen.this, sheets);
+                sheets = SheetsReader.loadSheets(MainScreen.this);
+                ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
+                ((SheetsAdapter) adapter).notifyDataSetChanged();
+            }
+        });
 
         sheets = SheetsReader.loadSheets(this);
 
@@ -121,9 +134,9 @@ public class MainScreen extends AppCompatActivity {
     }
 
     void changePreviews() {
+        SheetsReader.storeSheets(this, sheets);
         ((SheetsAdapter) adapter).setPreviews(sheets.getPreviews());
         ((SheetsAdapter) adapter).notifyDataSetChanged();
-        SheetsReader.storeSheets(this, sheets);
     }
 
 
