@@ -1,5 +1,7 @@
 package com.team.emi_projekt.misc;
 
+import android.util.ArraySet;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -229,7 +231,8 @@ public class Sheets implements Serializable {
     }
 
     public void removeAllItems() {
-        for (String tempLabel : current.keySet()) {
+        List<String> tempSet = new ArrayList<>(current.keySet());
+        for (String tempLabel : tempSet) {
             current.remove(tempLabel);
             current.put(tempLabel, new Vector<Item>());
         }

@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     private TextView mOutputText;
     private Button mCallApiButton;
+    private Button changeAccount;
     private Sheets sheets;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
@@ -96,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         setContentView(R.layout.activity_main);
 
         sheets = SheetsReader.loadSheets(this);
+
+        changeAccount = (Button) findViewById(R.id.changeAccount);
 
         mOutputText = (TextView) findViewById(R.id.loginText);
         mCallApiButton = (Button) findViewById(R.id.login);
@@ -117,6 +120,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
+
+        changeAccount.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCredential.setSelectedAccountName(null);
+                getPreferences(Context.MODE_PRIVATE).edit().putString(PREF_ACCOUNT_NAME, null).apply();
+                sheets = new Sheets();
+                SheetsReader.storeSheets(MainActivity.this, sheets);
+                chooseAccount();
+            }
+        });
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -197,6 +211,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
+                        sheets.setPrivateKey(accountName);
                         getResultsFromApi();
                     }
                 }

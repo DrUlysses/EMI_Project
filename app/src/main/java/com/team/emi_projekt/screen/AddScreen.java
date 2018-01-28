@@ -77,6 +77,8 @@ public class AddScreen extends AppCompatActivity {
         deleteItem = (Button) findViewById(R.id.deleteEditedItem);
 
         if (fullSheetLabelText == null) {
+            if (!Objects.equals(sheetLabelText, "") && Objects.equals(itemLabelText, ""))
+                editSheetLabel.setFocusable(false);
             Button shareButton = (Button) findViewById(R.id.shareButton);
             shareButton.setVisibility(View.VISIBLE);
             shareButton.setOnClickListener(new View.OnClickListener() {
