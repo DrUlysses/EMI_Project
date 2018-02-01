@@ -1,5 +1,7 @@
 package com.team.emi_projekt.misc;
 
+import android.util.ArraySet;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +55,8 @@ public class Sheets implements Serializable {
         List<List<Object>> result = new ArrayList<>();
 
         for(Item item : current.get(sheetLabel))
-            result.add(item.getData());
+            if (item.getLastBuyed() != null) //TODO: reforge this
+                result.add(item.getData());
 
         return result;
     }
@@ -62,7 +65,8 @@ public class Sheets implements Serializable {
         String result = "";
 
         for (Item item : current.get(sheetLabel))
-            result += item.getDataAsString() + "\n"; //TODO: change from += to StringFormat
+            if (item.getLastBuyed() != null) //TODO: reforge this
+                result += item.getDataAsString() + "\n"; //TODO: change from += to StringFormat
 
         return result;
     }
@@ -223,6 +227,14 @@ public class Sheets implements Serializable {
             int pos = findItemInVector(current.get(fromSheet), itemLabel);
             if (pos != -1)
                 current.get(fromSheet).remove(pos);
+        }
+    }
+
+    public void removeAllItems() {
+        List<String> tempSet = new ArrayList<>(current.keySet());
+        for (String tempLabel : tempSet) {
+            current.remove(tempLabel);
+            current.put(tempLabel, new Vector<Item>());
         }
     }
 

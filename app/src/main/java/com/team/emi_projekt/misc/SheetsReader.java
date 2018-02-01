@@ -4,23 +4,31 @@ import android.content.Context;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 
 public class SheetsReader {
 
     public static void storeSheets(Context context, Sheets sheets) {
 
         FileOutputStream outputStream;
+        OutputStreamWriter writer;
 
         try {
             outputStream = context.openFileOutput("Sheets.emi", Context.MODE_PRIVATE);
 
-            outputStream.write(sheets.getSheetsData().getBytes());
+            writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
+
+            writer.write(sheets.getSheetsData());
+
             /*
             Sheets format:
 
             SheetLabel|userName{ItemLabel|Itemsomething|ItemData|\nSecondItemBlaBla|\n}SecondSheetLabel|userName|secondUserName{same}
 
              */
+            writer.close();
             outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -31,18 +39,20 @@ public class SheetsReader {
         Sheets sheets = new Sheets();
 
         FileInputStream inputStream;
+        InputStreamReader reader;
 
         try {
             inputStream = context.openFileInput("Sheets.emi");
-            char current;
+            reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+            Character current;
             String temp = "";
-            while (inputStream.available() > 0) {
-                current = (char) inputStream.read();
+            while (reader.ready()) {
+                current = (char) reader.read();
                 if (current == '}') {
                     sheets.addSheetData(temp);
                     temp = "";
                 }
-                else
+                else //TODO: change from += to StringFormat
                     temp += current;
             }
             /*
@@ -51,6 +61,7 @@ public class SheetsReader {
             SheetLabel{ItemLabel|Itemsomething|ItemData|\nSecondItemBlaBla|\n}SecondSheetLabel{same}
 
              */
+            reader.close();
             inputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
